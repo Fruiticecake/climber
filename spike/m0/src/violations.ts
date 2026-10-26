@@ -19,7 +19,9 @@ function describe(v: Violation): string {
     case 'R4':
       return `${pair}相距 ${cm(v.actualCm)}，超过最大双脚跨度 ${cm(v.limitCm)}`
     case 'R6':
-      return `${a ? LIMB_NAMES[a] : ''}（#${ha}）比双手平均高度高出 ${cm(v.actualCm)}（上限 ${cm(v.limitCm)}），除非是挂脚跟或勾脚尖`
+      return v.detail === 'hook'
+        ? `${a ? LIMB_NAMES[a] : ''}（#${ha}）挂脚跟或勾脚尖的位置比较高那只手还高出 ${cm(v.actualCm)}（上限 ${cm(v.limitCm)}），身体会倒过来，先把手移上去再挂`
+        : `${a ? LIMB_NAMES[a] : ''}（#${ha}）比双手平均高度高出 ${cm(v.actualCm)}（上限 ${cm(v.limitCm)}），除非是挂脚跟或勾脚尖`
     case 'R7':
       return `${pair}左右交叉了，如果是有意的交叉，请在 techniques 里加上 "cross"`
     default:

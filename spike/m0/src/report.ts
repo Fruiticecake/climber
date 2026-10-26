@@ -58,11 +58,12 @@ export function buildReport(runs: Array<{ route: Route; entries: RunEntry[] }>, 
       '',
       `墙：${route.wall.widthCm}×${route.wall.heightCm}cm，角度 ${route.wall.angleDeg}°；攀爬者：身高 ${route.body.heightCm}cm，臂展 ${route.body.armSpanCm}cm`,
       '',
-      '| 模型 | 通过 | 尝试次数 | 剩余违规 | 输入/输出 token | 费用 |',
-      '|---|---|---|---|---|---|',
+      '| 模型 | 通过 | 尝试次数 | 剩余违规 | 提示 | 输入/输出 token | 费用 |',
+      '|---|---|---|---|---|---|---|',
       ...entries.map((e) => {
         const remaining = e.result.best?.result.violations.length ?? '-'
-        return `| ${e.modelId} | ${e.result.passed ? '✅' : '❌'} | ${e.result.attempts.length} | ${remaining} | ${e.result.usage.inputTokens}/${e.result.usage.outputTokens} | ${money(e.usd)} |`
+        const warnings = e.result.best?.result.warnings.map((w) => w.rule).join(' ') || '-'
+        return `| ${e.modelId} | ${e.result.passed ? '✅' : '❌'} | ${e.result.attempts.length} | ${remaining} | ${warnings} | ${e.result.usage.inputTokens}/${e.result.usage.outputTokens} | ${money(e.usd)} |`
       }),
       '',
       ...entries.map(entrySection),

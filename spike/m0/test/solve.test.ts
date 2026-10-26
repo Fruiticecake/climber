@@ -2,7 +2,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { loadRoutes, loadTechniques } from '../src/config.js'
-import { buildRoutePrompt, buildSystemPrompt } from '../src/prompt.js'
+import { buildRoutePrompt, buildSystemPrompt, wallStyleHint } from '../src/prompt.js'
 import type { ProviderReply, SolverProvider } from '../src/providers/types.js'
 import { MockProvider } from '../src/providers/mock.js'
 import { extractJson, solveRoute } from '../src/solve.js'
@@ -42,6 +42,13 @@ describe('样例数据', () => {
   it('提示词包含技巧词典和这条线路的身体限制', () => {
     expect(buildSystemPrompt(techniques)).toContain('twist-lock')
     expect(buildRoutePrompt(routeById('a-sidepull-twist'), 2)).toContain('双手跨度 ≤ 163cm')
+  })
+
+  it('按墙角度给出不同的技巧方向', () => {
+    expect(wallStyleHint(-10)).toContain('正墙')
+    expect(wallStyleHint(0)).toContain('直墙')
+    expect(wallStyleHint(30)).toContain('仰角')
+    expect(buildRoutePrompt(routeById('c-slab-balance'), 2)).toContain('这是正墙')
   })
 })
 

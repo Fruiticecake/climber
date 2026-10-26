@@ -6,10 +6,24 @@ import type { Route } from './types.js'
 import {
   CROSS_TOLERANCE_CM,
   FOOT_ABOVE_HANDS_TOLERANCE_CM,
+  HOOK_ABOVE_TOP_HAND_MAX_CM,
   limitsFor,
   MAX_STEPS,
+  SLAB_MAX_ANGLE_DEG,
   TWIST_REACH_BONUS,
 } from './verify.js'
+
+/** 墙角度达到这个值算明显的仰角 */
+export const STEEP_MIN_ANGLE_DEG = 15
+
+/** 按墙角度给出技巧方向，避免在正墙上套用仰角的技巧 */
+export function wallStyleHint(angleDeg: number): string {
+  if (angleDeg < SLAB_MAX_ANGLE_DEG)
+    return '这是正墙：以正身站立为主，靠踩墙（smear）、精准踩点、高脚和翻上（rock-over）把重心平移到脚上，手点主要用来保持平衡。扭转、落膝、外侧踩很少需要，除非某一步确实要侧身才能够到，请在 why 里说明原因。'
+  if (angleDeg < STEEP_MIN_ANGLE_DEG)
+    return '这是直墙：正身和侧身都常用。侧拉点适合扭转、外侧踩；尽量顶胯、直臂挂着，先上脚再上手。'
+  return '这是仰角墙：身体容易离墙、甩门。多用挂脚跟、勾脚尖把身体拉向墙面，配合扭转、落膝、顶胯和核心收紧；远点可以考虑定点。'
+}
 
 const OUTPUT_EXAMPLE = {
   betas: [
@@ -52,7 +66,7 @@ export function buildSystemPrompt(techniques: Technique[]): string {
 2. 每一步只移动一个肢体。手必须落在点上；脚可以 to: null，但只能是 smear（踩墙）或 flag（旗式）。
 3. 距离按岩点边缘计算。双手跨度、手脚跨度、双脚跨度都有上限，具体数值见每条线路的"身体限制"。
 4. 髋贴墙（hips 为 left-in 或 right-in）时，贴墙一侧的手负责锁定，对侧的手伸展上限放宽到 ${TWIST_REACH_BONUS} 倍；motion 为 deadpoint 或 dyno 时也放宽到 ${TWIST_REACH_BONUS} 倍。
-5. 脚不能比双手平均高度高出 ${FOOT_ABOVE_HANDS_TOLERANCE_CM}cm 以上，除非这只脚是 heel-hook 或 toe-hook。
+5. 脚不能比双手平均高度高出 ${FOOT_ABOVE_HANDS_TOLERANCE_CM}cm 以上，除非这只脚是 heel-hook 或 toe-hook；但挂脚跟、勾脚尖也不能比较高那只手再高出 ${HOOK_ABOVE_TOP_HAND_MAX_CM}cm 以上（否则身体会倒过来）。
 6. 左手不能在右手右边超过 ${CROSS_TOLERANCE_CM}cm（脚同理），有意交叉时在 techniques 里写 "cross"。
 7. 不要回到出现过的姿态，总步数不超过 ${MAX_STEPS}。
 8. 手和脚不能同时在同一个点上：手离开之后脚才能踩上去（techniques 含 rock-over 或 mantle 时除外）。
@@ -94,6 +108,7 @@ ${route.description}
 
 ## 墙
 宽 ${route.wall.widthCm}cm，高 ${route.wall.heightCm}cm，角度 ${route.wall.angleDeg}°
+${wallStyleHint(route.wall.angleDeg)}
 
 ## 攀爬者
 身高 ${route.body.heightCm}cm，臂展 ${route.body.armSpanCm}cm；肩高约 ${Math.round(dims.shoulderHeightCm)}cm，单臂长约 ${Math.round(dims.armLengthCm)}cm。

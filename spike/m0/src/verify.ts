@@ -8,6 +8,10 @@ export const HAND_SPAN_FACTOR = 0.95
 export const HAND_FOOT_FACTOR = 0.95
 export const FOOT_SPAN_RATIO = 0.9
 export const FOOT_ABOVE_HANDS_TOLERANCE_CM = 20
+/** 挂脚跟、勾脚尖可以高过手，但不能比较高那只手再高出这么多，否则身体就倒过来了 */
+export const HOOK_ABOVE_TOP_HAND_MAX_CM = 40
+/** 墙角度小于这个值算正墙 */
+export const SLAB_MAX_ANGLE_DEG = 0
 export const CROSS_TOLERANCE_CM = 15
 export const MAX_STEPS = 40
 export const TWIST_REACH_BONUS = 1.1
@@ -15,7 +19,10 @@ export const DYNAMIC_REACH_BONUS = 1.1
 export const PULL_DIR_TOLERANCE_DEG = 60
 
 export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10'
-export type WarningId = 'S1' | 'S3' | 'S4'
+export type WarningId = 'S1' | 'S3' | 'S4' | 'S5'
+
+/** 侧身类技巧：正墙上很少需要 */
+export const TWIST_TECHNIQUES = ['twist-lock', 'drop-knee', 'backstep']
 
 export interface Violation {
   /** 步骤编号，0 表示起始姿态 */
@@ -169,11 +176,23 @@ function checkFrame(frame: Frame, byId: Map<number, Hold>, limits: Limits, carri
 
   if (lh && rh) {
     const handsY = (lh.y + rh.y) / 2
+    const topHandY = Math.max(lh.y, rh.y)
     for (const [footLimb, f] of feet) {
+      if (!f) continue
       const tech = frame.footTech[footLimb]
       const hooked = tech === 'heel-hook' || tech === 'toe-hook'
-      if (f && f.y - handsY > FOOT_ABOVE_HANDS_TOLERANCE_CM && !hooked)
+      if (!hooked && f.y - handsY > FOOT_ABOVE_HANDS_TOLERANCE_CM)
         out.push({ step: frame.index, rule: 'R6', limbs: [footLimb], holds: [f.id], actualCm: f.y - handsY, limitCm: FOOT_ABOVE_HANDS_TOLERANCE_CM })
+      if (hooked && f.y - topHandY > HOOK_ABOVE_TOP_HAND_MAX_CM)
+        out.push({
+          step: frame.index,
+          rule: 'R6',
+          limbs: [footLimb],
+          holds: [f.id],
+          actualCm: f.y - topHandY,
+          limitCm: HOOK_ABOVE_TOP_HAND_MAX_CM,
+          detail: 'hook',
+        })
     }
   }
   return { violations: out, stretched }
@@ -226,8 +245,25 @@ function angleDiff(a: number, b: number): number {
   return Math.min(d, 360 - d)
 }
 
-function collectWarnings(frames: Frame[], byId: Map<number, Hold>): Warning[] {
-  const out: Warning[] = []
+/** S5：正墙上大量使用侧身类技巧。整套爬法只给一条提示，列出涉及的步骤 */
+function slabTwistWarning(route: Route, frames: Frame[]): Warning[] {
+  if (route.wall.angleDeg >= SLAB_MAX_ANGLE_DEG) return []
+  const twisted = frames
+    .slice(1)
+    .filter((f) => f.step!.hips !== 'square' || f.step!.techniques.some((t) => TWIST_TECHNIQUES.includes(t)))
+    .map((f) => f.index)
+  if (twisted.length === 0) return []
+  return [
+    {
+      step: twisted[0]!,
+      rule: 'S5',
+      detail: `正墙（${route.wall.angleDeg}°）上第 ${twisted.join('、')} 步用了侧身或扭转；正墙通常正身站立，靠踩墙、高脚和重心平移，确认这些步骤真的需要侧身`,
+    },
+  ]
+}
+
+function collectWarnings(route: Route, frames: Frame[], byId: Map<number, Hold>): Warning[] {
+  const out: Warning[] = [...slabTwistWarning(route, frames)]
   frames.slice(1).forEach((frame, k) => {
     const prev = frames[k]!
     const step = frame.step!
@@ -275,6 +311,6 @@ export function verify(route: Route, beta: Beta): VerifyResult {
 
   return {
     violations: [...violations].sort((a, b) => a.step - b.step),
-    warnings: collectWarnings(frames, byId),
+    warnings: [...collectWarnings(route, frames, byId)].sort((a, b) => a.step - b.step),
   }
 }

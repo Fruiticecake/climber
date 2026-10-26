@@ -141,8 +141,18 @@ describe('verify', () => {
   it('R6：脚高过手，除非挂脚', () => {
     const high = beta([step({ limb: 'LF', to: 12, foot: 'front' }), ...toTop])
     expect(rules(high)).toContain('R6')
+    // #12 比起点手 #1 高 140cm，挂脚也不行
     const hooked = beta([step({ limb: 'LF', to: 12, foot: 'heel-hook' }), ...toTop])
-    expect(rules(hooked)).not.toContain('R6')
+    expect(verify(route, hooked).violations).toContainEqual(expect.objectContaining({ rule: 'R6', step: 1, detail: 'hook' }))
+  })
+
+  it('R6：挂脚高过手但在上限之内是允许的', () => {
+    // #50 比起点手 #1 高 30cm，没超过挂脚上限 40cm
+    const hookRoute: Route = { ...route, holds: [...route.holds, { id: 50, x: 260, y: 190, r: 5, role: 'normal' }] }
+    const b = beta([step({ limb: 'RF', to: 50, foot: 'heel-hook' }), step({ limb: 'RF', to: 11, foot: 'front' }), ...toTop])
+    expect(verify(hookRoute, b).violations.filter((v) => v.rule === 'R6')).toEqual([])
+    const plain = beta([step({ limb: 'RF', to: 50, foot: 'front' }), step({ limb: 'RF', to: 11, foot: 'front' }), ...toTop])
+    expect(verify(hookRoute, plain).violations.map((v) => v.rule)).toContain('R6')
   })
 
   it('R7：交叉手需要标 cross', () => {
@@ -174,6 +184,29 @@ describe('verify', () => {
   it('R9：旗式时另一只脚必须在点上', () => {
     const b = beta([step({ limb: 'RF', to: null, foot: 'smear' }), step({ limb: 'LF', to: null, foot: 'flag' }), ...toTop])
     expect(rules(b)).toContain('R9')
+  })
+
+  describe('S5：正墙上的侧身技巧', () => {
+    const slab: Route = { ...route, wall: { ...route.wall, angleDeg: -10 } }
+    const twisty = beta([step({ limb: 'LH', to: 2, hips: 'left-in' }), step({ limb: 'RF', to: null, foot: 'smear', techniques: ['backstep'] }), ...toTop])
+
+    it('正墙上用了侧身或扭转，整套爬法给一条提示并列出步骤', () => {
+      const s5 = verify(slab, twisty).warnings.filter((w) => w.rule === 'S5')
+      expect(s5).toHaveLength(1)
+      expect(s5[0]!.detail).toContain('第 1、2 步')
+    })
+
+    it('正墙上正身爬没有提示', () => {
+      expect(verify(slab, beta(toTop)).warnings.map((w) => w.rule)).not.toContain('S5')
+    })
+
+    it('直墙上侧身不提示', () => {
+      expect(verify(route, twisty).warnings.map((w) => w.rule)).not.toContain('S5')
+    })
+
+    it('S5 只是提示，不算违规', () => {
+      expect(verify(slab, twisty).violations.map((v) => v.rule)).not.toContain('S5')
+    })
   })
 
   it('S1：无脚移动手只给提示', () => {
