@@ -1,0 +1,26 @@
+{
+  "_note": "Claude Code 手写的样例回复，用于跑通流程，不代表模型 API 的真实输出",
+  "replies": [
+    {
+      "betas": [
+        {
+          "label": "技巧解",
+          "summary": "正墙靠脚不靠手：小点只用来保持平衡，每一手之前先把脚抬高，最后用翻上站起来",
+          "startPose": { "LH": 1, "RH": 1, "LF": 2, "RF": 3 },
+          "startFeet": { "LF": "front", "RF": "front" },
+          "steps": [
+            { "limb": "RF", "to": 5, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "normal", "motion": "static", "techniques": ["smear"], "note": "右脚前脚掌踩 #5，脚跟放低", "why": "正墙上脚跟放低、重心压在脚上，摩擦力才够", "commonMistake": "身体贴墙太紧，反而把脚从墙上推出去" },
+            { "limb": "LH", "to": 4, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "normal", "motion": "static", "techniques": [], "note": "左手轻扶 #4", "why": "小点只用来保持平衡，不要用力抠", "commonMistake": "死抠小点，手指和前臂很快就累" },
+            { "limb": "LF", "to": 7, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "normal", "motion": "static", "techniques": [], "note": "左脚踩 #7", "why": "继续用脚把身体往上送", "commonMistake": "低头看手，不看脚点" },
+            { "limb": "RH", "to": 6, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "normal", "motion": "static", "techniques": [], "note": "右手扶 #6", "why": "保持重心在双脚正上方", "commonMistake": "伸手时重心偏到一侧，脚就滑了" },
+            { "limb": "RF", "to": 8, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "normal", "motion": "static", "techniques": ["high-step"], "note": "右脚高抬踩 #8", "why": "正墙的进度主要靠腿", "commonMistake": "脚抬高了却不敢把重心移过去" },
+            { "limb": "LF", "to": 10, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["high-step"], "note": "左脚踩上 #10，接近髋的高度", "why": "这一脚踩稳，下一步就能翻上", "commonMistake": "踩得太虚，重心一压就滑" },
+            { "limb": "LH", "to": 9, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["rock-over"], "note": "重心压到左脚上站起来，左手扶圆包 #9", "why": "用腿站起来，圆包只是用来稳住身体", "commonMistake": "想用手把自己拉上去，圆包根本拉不住" },
+            { "limb": "RH", "to": 11, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "右手够 TOP #11", "why": "站直之后 TOP 已经在静态范围内", "commonMistake": "站起来之前就伸手" },
+            { "limb": "LH", "to": 11, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["match"], "note": "左手并到 TOP", "why": "双手在 TOP 停稳才算完攀", "commonMistake": "右手占满了整个点" }
+          ]
+        }
+      ]
+    }
+  ]
+}

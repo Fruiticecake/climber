@@ -1,0 +1,20 @@
+{
+  "id": "c-slab-balance",
+  "name": "C 正墙平衡",
+  "description": "Claude 构造的样例线路：-10° 正墙，手点都很小，需要靠脚和重心转移，适合练高脚和翻上。",
+  "wall": { "widthCm": 400, "heightCm": 400, "angleDeg": -10 },
+  "body": { "heightCm": 170, "armSpanCm": 172 },
+  "holds": [
+    { "id": 1, "x": 200, "y": 150, "r": 5, "role": "start-hand", "type": "crimp", "pullDirDeg": 0 },
+    { "id": 2, "x": 185, "y": 30, "r": 4, "role": "start-foot" },
+    { "id": 3, "x": 235, "y": 35, "r": 4, "role": "start-foot" },
+    { "id": 4, "x": 150, "y": 210, "r": 5, "role": "normal", "type": "crimp" },
+    { "id": 5, "x": 230, "y": 90, "r": 4, "role": "normal" },
+    { "id": 6, "x": 240, "y": 260, "r": 5, "role": "normal", "type": "crimp" },
+    { "id": 7, "x": 170, "y": 140, "r": 4, "role": "normal" },
+    { "id": 8, "x": 225, "y": 190, "r": 4, "role": "normal" },
+    { "id": 9, "x": 205, "y": 320, "r": 6, "role": "normal", "type": "sloper" },
+    { "id": 10, "x": 190, "y": 250, "r": 5, "role": "normal" },
+    { "id": 11, "x": 225, "y": 375, "r": 8, "role": "top", "type": "jug", "pullDirDeg": 0 }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "b-overhang-heelhook",
+  "name": "B 30° 仰角挂脚跟",
+  "description": "Claude 构造的样例线路：30° 仰角，双手分开起步，右侧有一个和手差不多高的大点，适合挂脚跟分担手的拉力。",
+  "wall": { "widthCm": 400, "heightCm": 380, "angleDeg": 30 },
+  "body": { "heightCm": 170, "armSpanCm": 172 },
+  "holds": [
+    { "id": 1, "x": 120, "y": 160, "r": 8, "role": "start-hand", "type": "jug", "pullDirDeg": 0 },
+    { "id": 2, "x": 175, "y": 160, "r": 8, "role": "start-hand", "type": "jug", "pullDirDeg": 0 },
+    { "id": 3, "x": 130, "y": 45, "r": 6, "role": "start-foot" },
+    { "id": 4, "x": 190, "y": 50, "r": 6, "role": "start-foot" },
+    { "id": 5, "x": 260, "y": 190, "r": 9, "role": "normal", "type": "jug", "pullDirDeg": 0 },
+    { "id": 6, "x": 215, "y": 260, "r": 7, "role": "normal", "type": "crimp", "pullDirDeg": 0 },
+    { "id": 7, "x": 160, "y": 110, "r": 6, "role": "normal" },
+    { "id": 8, "x": 280, "y": 300, "r": 8, "role": "normal", "type": "sloper" },
+    { "id": 9, "x": 230, "y": 355, "r": 10, "role": "top", "type": "jug", "pullDirDeg": 0 }
+  ]
+}

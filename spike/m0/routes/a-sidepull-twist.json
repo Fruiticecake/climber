@@ -1,0 +1,21 @@
+{
+  "id": "a-sidepull-twist",
+  "name": "A 直墙侧拉扭转",
+  "description": "Claude 构造的样例线路：直墙，起点并手，左侧有一个往右拉的侧拉点，适合练扭转和外侧踩。",
+  "wall": { "widthCm": 400, "heightCm": 420, "angleDeg": 0 },
+  "body": { "heightCm": 170, "armSpanCm": 172 },
+  "holds": [
+    { "id": 1, "x": 180, "y": 165, "r": 8, "role": "start-hand", "type": "jug", "pullDirDeg": 0 },
+    { "id": 2, "x": 165, "y": 40, "r": 5, "role": "start-foot" },
+    { "id": 3, "x": 215, "y": 45, "r": 5, "role": "start-foot" },
+    { "id": 4, "x": 130, "y": 215, "r": 6, "role": "normal", "type": "crimp", "pullDirDeg": 90 },
+    { "id": 5, "x": 225, "y": 95, "r": 5, "role": "normal" },
+    { "id": 6, "x": 250, "y": 280, "r": 7, "role": "normal", "type": "crimp", "pullDirDeg": 0 },
+    { "id": 7, "x": 150, "y": 125, "r": 5, "role": "normal" },
+    { "id": 8, "x": 185, "y": 335, "r": 6, "role": "normal", "type": "pinch" },
+    { "id": 9, "x": 240, "y": 170, "r": 5, "role": "normal" },
+    { "id": 10, "x": 175, "y": 215, "r": 6, "role": "normal" },
+    { "id": 11, "x": 215, "y": 390, "r": 10, "role": "top", "type": "jug", "pullDirDeg": 0 },
+    { "id": 12, "x": 250, "y": 235, "r": 5, "role": "normal" }
+  ]
+}

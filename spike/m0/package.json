@@ -1,0 +1,24 @@
+{
+  "name": "climber-m0-spike",
+  "private": true,
+  "type": "module",
+  "description": "M0: 验证大模型能否根据点位数据给出技巧型抱石爬法",
+  "scripts": {
+    "m0": "tsx src/run.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
+    "openai": "^7.43.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^5.0.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

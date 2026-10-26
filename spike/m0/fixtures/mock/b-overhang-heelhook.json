@@ -1,0 +1,47 @@
+{
+  "_note": "Claude Code 手写的样例回复。第一条故意在第 5 步静态伸展过远，用来测试重试流程；第二条改成定点",
+  "replies": [
+    {
+      "betas": [
+        {
+          "label": "技巧解",
+          "summary": "右脚挂脚跟分担拉力，保持身体贴近仰角墙，逐步把脚换高",
+          "startPose": { "LH": 1, "RH": 2, "LF": 3, "RF": 4 },
+          "startFeet": { "LF": "front", "RF": "front" },
+          "steps": [
+            { "limb": "RH", "to": 5, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "右手移到 #5", "why": "#5 是大点，先把右手放到高处、挂脚跟的位置旁边", "commonMistake": "手臂弯着挂，前臂很快就泵" },
+            { "limb": "RF", "to": 2, "grip": null, "foot": "heel-hook", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["heel-hook"], "note": "右脚跟挂上 #2", "why": "仰角墙上脚跟往下勾，用大腿后侧把身体拉向墙面", "commonMistake": "脚跟只是搭着，没有主动发力" },
+            { "limb": "LF", "to": 7, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "左脚踩上 #7", "why": "抬高左脚，缩短下一手的距离", "commonMistake": "脚踩得太虚，一出手就滑" },
+            { "limb": "LH", "to": 6, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["heel-hook"], "note": "左手上 #6", "why": "挂脚跟分担了拉力，左手可以放心出", "commonMistake": "出手时脚跟松了" },
+            { "limb": "RH", "to": 8, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": [], "note": "右手够 #8", "why": "继续往上", "commonMistake": null },
+            { "limb": "RF", "to": 5, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "右脚换到 #5", "why": "把脚抬高", "commonMistake": null },
+            { "limb": "LF", "to": 2, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "左脚踩 #2", "why": "把脚抬高", "commonMistake": null },
+            { "limb": "LH", "to": 9, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": [], "note": "左手上 TOP", "why": "完攀", "commonMistake": null },
+            { "limb": "RH", "to": 9, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["match"], "note": "右手并到 TOP", "why": "双手停稳", "commonMistake": null }
+          ]
+        }
+      ]
+    },
+    {
+      "betas": [
+        {
+          "label": "技巧解",
+          "summary": "右脚挂脚跟分担拉力，第 5 步借脚跟发力定点到圆包，再把双脚换高完攀",
+          "startPose": { "LH": 1, "RH": 2, "LF": 3, "RF": 4 },
+          "startFeet": { "LF": "front", "RF": "front" },
+          "steps": [
+            { "limb": "RH", "to": 5, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "右手移到 #5", "why": "#5 是大点，先把右手放到高处、挂脚跟的位置旁边", "commonMistake": "手臂弯着挂，前臂很快就泵" },
+            { "limb": "RF", "to": 2, "grip": null, "foot": "heel-hook", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["heel-hook"], "note": "右脚跟挂上 #2", "why": "仰角墙上脚跟往下勾，用大腿后侧把身体拉向墙面", "commonMistake": "脚跟只是搭着，没有主动发力" },
+            { "limb": "LF", "to": 7, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "左脚踩上 #7", "why": "抬高左脚，缩短下一手的距离", "commonMistake": "脚踩得太虚，一出手就滑" },
+            { "limb": "LH", "to": 6, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["heel-hook"], "note": "左手上 #6", "why": "挂脚跟分担了拉力，左手可以放心出", "commonMistake": "出手时脚跟松了" },
+            { "limb": "RH", "to": 8, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "deadpoint", "techniques": ["deadpoint", "heel-hook"], "note": "脚跟一收、左脚一蹬，右手定点抓圆包 #8", "why": "#8 超出静态够得到的范围，用脚跟和左脚把身体送上去，在最高点抓", "commonMistake": "只用手拉，脚跟提前松开，身体荡出去" },
+            { "limb": "RF", "to": 5, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "右脚从挂脚跟换成正踩 #5", "why": "手都上去了，脚要赶紧跟上，减轻圆包上的负担", "commonMistake": "脚在空中乱找，核心松了身体会荡出去" },
+            { "limb": "LF", "to": 2, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "左脚踩 #2", "why": "双脚都抬高，TOP 就进入静态范围", "commonMistake": "脚上得太慢，手先泵了" },
+            { "limb": "LH", "to": 9, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "左手上 TOP #9", "why": "髋贴墙，伸直手臂去够", "commonMistake": "屁股往外坐，所有重量都挂在圆包上" },
+            { "limb": "RH", "to": 9, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["match"], "note": "右手并到 TOP", "why": "双手在 TOP 停稳才算完攀", "commonMistake": "左手占满了整个点" }
+          ]
+        }
+      ]
+    }
+  ]
+}

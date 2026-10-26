@@ -1,0 +1,27 @@
+{
+  "_note": "Claude Code 手写的样例回复，用于跑通流程，不代表模型 API 的真实输出",
+  "replies": [
+    {
+      "betas": [
+        {
+          "label": "技巧解",
+          "summary": "左手侧拉加左脚外侧踩，左髋贴墙扭转，用伸直的右手去够远点，全程尽量不屈臂",
+          "startPose": { "LH": 1, "RH": 1, "LF": 2, "RF": 3 },
+          "startFeet": { "LF": "front", "RF": "front" },
+          "steps": [
+            { "limb": "RF", "to": 5, "grip": null, "foot": "inside-edge", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "右脚内侧踩上 #5", "why": "先上脚把重心抬高，手还没动就已经离下一个手点更近", "commonMistake": "急着先出手，脚还留在最下面" },
+            { "limb": "LH", "to": 4, "grip": "side-pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["side-pull"], "note": "左手抓 #4，往右侧拉", "why": "#4 的受力边朝左，只能侧拉；身体往右倒，用体重对抗拉力", "commonMistake": "像拉把手一样往下拉，抓不住" },
+            { "limb": "LF", "to": 7, "grip": null, "foot": "outside-edge", "hips": "left-in", "hipsToWall": "close", "motion": "static", "techniques": ["backstep"], "note": "左脚外侧边踩 #7，左髋转向墙面", "why": "外侧踩让左髋能贴墙，为下一步扭转做准备", "commonMistake": "用脚尖正踩，髋转不过去" },
+            { "limb": "RH", "to": 6, "grip": "pull", "foot": null, "hips": "left-in", "hipsToWall": "close", "motion": "static", "techniques": ["twist-lock", "hips-in"], "note": "保持左髋贴墙，右手伸直去够 #6", "why": "侧身后右肩离墙更近，伸直的手臂能多够出一截，左手侧拉负责锁定", "commonMistake": "身体转回正面，变成屈臂硬拉" },
+            { "limb": "RF", "to": 9, "grip": null, "foot": "inside-edge", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "右脚踩上 #9，身体转回正面", "why": "双手都稳了再调整脚，把重心带到右侧，准备上左脚", "commonMistake": "脚没踩稳就松开侧拉" },
+            { "limb": "LF", "to": 10, "grip": null, "foot": "front", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["high-step"], "note": "左脚高抬踩 #10", "why": "高脚把下一步需要的距离提前用腿解决", "commonMistake": "脚抬上去了，重心还留在右脚上" },
+            { "limb": "LH", "to": 8, "grip": "pinch", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["rock-over", "pinch"], "note": "重心压到左脚翻上去，左手捏 #8", "why": "用腿站起来而不是用手拉，捏点要拇指对夹", "commonMistake": "靠手臂把自己拉上去" },
+            { "limb": "RF", "to": 12, "grip": null, "foot": "inside-edge", "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["hips-in"], "note": "右脚上 #12", "why": "TOP 离脚太远，先把右脚抬高再出最后一手", "commonMistake": "脚不上就直接扑 TOP" },
+            { "limb": "RH", "to": 11, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "deadpoint", "techniques": ["deadpoint"], "note": "右手定点抓 TOP #11", "why": "腿轻轻一推，在重心最高点抓住，比静态锁定省力", "commonMistake": "发力太大，手到点时身体已经开始往下掉" },
+            { "limb": "LH", "to": 11, "grip": "pull", "foot": null, "hips": "square", "hipsToWall": "close", "motion": "static", "techniques": ["match"], "note": "左手并到 TOP 上停稳", "why": "双手在 TOP 停稳才算完攀", "commonMistake": "右手占满了整个点，左手没地方放" }
+          ]
+        }
+      ]
+    }
+  ]
+}
