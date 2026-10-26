@@ -14,7 +14,7 @@ export const TWIST_REACH_BONUS = 1.1
 export const DYNAMIC_REACH_BONUS = 1.1
 export const PULL_DIR_TOLERANCE_DEG = 60
 
-export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9'
+export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10'
 export type WarningId = 'S1' | 'S3' | 'S4'
 
 export interface Violation {
@@ -179,7 +179,7 @@ function checkFrame(frame: Frame, byId: Map<number, Hold>, limits: Limits, carri
   return { violations: out, stretched }
 }
 
-/** 步骤本身的合法性（R5、R8、R9） */
+/** 步骤本身的合法性（R5、R8、R9、R10） */
 function checkStep(frames: Frame[], i: number): Violation[] {
   const frame = frames[i]!
   const prev = frames[i - 1]!
@@ -196,6 +196,15 @@ function checkStep(frames: Frame[], i: number): Violation[] {
   const key = JSON.stringify(frame.pose)
   if (frames.slice(0, i).some((f) => JSON.stringify(f.pose) === key))
     out.push({ step: i, rule: 'R8', limbs: [step.limb], holds: [], detail: '回到了之前出现过的姿态' })
+
+  // 手和脚不能同时在一个点上：手离开之后脚才能踩上去（翻上、撑上时除外）
+  if (step.to !== null) {
+    const others = (isHand ? ['LF', 'RF'] : ['LH', 'RH']) as Limb[]
+    const sharing = others.filter((l) => frame.pose[l] === step.to)
+    const allowed = step.techniques.includes('rock-over') || step.techniques.includes('mantle')
+    if (sharing.length > 0 && !allowed)
+      out.push({ step: i, rule: 'R10', limbs: [step.limb, ...sharing], holds: [step.to], detail: `#${step.to} 上已经有${isHand ? '脚' : '手'}了` })
+  }
 
   if (step.foot === 'flag' && step.to === null) {
     const other = step.limb === 'LF' ? 'RF' : 'LF'

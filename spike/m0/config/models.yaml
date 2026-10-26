@@ -24,9 +24,18 @@ models:
     serverFallbacks: true
     price: { input: 4.00, output: 20.00 }
 
+  # DeepSeek 价格来自 https://api-docs.deepseek.com/quick_start/pricing/（2026-10-26 查询）
+  # 按高峰价填写（偏保守）；工作日 UTC 01-04、06-10 点以外是半价
   - id: deepseek
     provider: openai-compat
-    # 模型名和地址请以 DeepSeek 官方文档为准
-    model: deepseek-chat
+    model: deepseek-flash
     baseUrl: https://api.deepseek.com
     apiKeyEnv: DEEPSEEK_API_KEY
+    price: { input: 0.30, output: 1.20 }
+
+  - id: deepseek-pro
+    provider: openai-compat
+    model: deepseek-v4-pro
+    baseUrl: https://api.deepseek.com
+    apiKeyEnv: DEEPSEEK_API_KEY
+    price: { input: 1.32, output: 3.96 }

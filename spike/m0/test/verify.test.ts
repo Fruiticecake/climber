@@ -163,6 +163,14 @@ describe('verify', () => {
     expect(rules(back)).toContain('R8')
   })
 
+  it('R10：脚不能踩在手正抓着的点上，翻上时除外', () => {
+    const low: Route = { ...route, holds: [...route.holds, { id: 40, x: 210, y: 120, r: 5, role: 'normal' }] }
+    const shared = verify(low, beta([step({ limb: 'RH', to: 40 }), step({ limb: 'LF', to: 40 }), ...toTop])).violations
+    expect(shared.map((v) => v.rule)).toContain('R10')
+    const rockOver = verify(low, beta([step({ limb: 'RH', to: 40 }), step({ limb: 'LF', to: 40, techniques: ['rock-over'] }), ...toTop])).violations
+    expect(rockOver.map((v) => v.rule)).not.toContain('R10')
+  })
+
   it('R9：旗式时另一只脚必须在点上', () => {
     const b = beta([step({ limb: 'RF', to: null, foot: 'smear' }), step({ limb: 'LF', to: null, foot: 'flag' }), ...toTop])
     expect(rules(b)).toContain('R9')

@@ -27,7 +27,10 @@ function stepsTable(beta: Beta): string {
 function entrySection(entry: RunEntry): string {
   const { result } = entry
   const lines = [`### ${entry.modelId}`, '']
-  const attempts = result.attempts.map((a) => `第 ${a.attempt} 次：${a.outcome}${a.detail ? `（${cell(a.detail)}）` : ''}`)
+  const attempts = result.attempts.map((a) => {
+    const counts = a.candidates.length > 0 ? `，各候选违规数 ${a.candidates.map((c) => c.result.violations.length).join('/')}` : ''
+    return `第 ${a.attempt} 次：${a.outcome}${a.detail ? `（${cell(a.detail)}）` : ''}${counts}`
+  })
   lines.push(`尝试记录：${attempts.join('；') || '无'}`, '')
   if (!result.best) return [...lines, '没有可展示的候选。', ''].join('\n')
 

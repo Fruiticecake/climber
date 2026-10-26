@@ -55,6 +55,7 @@ export function buildSystemPrompt(techniques: Technique[]): string {
 5. 脚不能比双手平均高度高出 ${FOOT_ABOVE_HANDS_TOLERANCE_CM}cm 以上，除非这只脚是 heel-hook 或 toe-hook。
 6. 左手不能在右手右边超过 ${CROSS_TOLERANCE_CM}cm（脚同理），有意交叉时在 techniques 里写 "cross"。
 7. 不要回到出现过的姿态，总步数不超过 ${MAX_STEPS}。
+8. 手和脚不能同时在同一个点上：手离开之后脚才能踩上去（techniques 含 rock-over 或 mantle 时除外）。
 
 ## 爬法要求
 - 优先选择省力的身体姿势：手臂尽量伸直挂着，髋贴墙，先上脚再上手。

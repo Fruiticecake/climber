@@ -19,7 +19,8 @@ describe('estimateUsd', () => {
 
   it('mock 为 0，未填价格的第三方为 null', () => {
     expect(estimateUsd(modelById('mock'), 100, 100)).toBe(0)
-    expect(estimateUsd(modelById('deepseek'), 100, 100)).toBeNull()
+    const unpriced = { ...modelById('deepseek'), price: undefined }
+    expect(estimateUsd(unpriced, 100, 100)).toBeNull()
   })
 })
 
@@ -32,7 +33,7 @@ describe('buildReport', () => {
 
     expect(report).toContain('## B 30° 仰角挂脚跟')
     expect(report).toContain('| mock | ✅ | 2 | 0 |')
-    expect(report).toContain('第 1 次：violations；第 2 次：passed')
+    expect(report).toContain('第 1 次：violations，各候选违规数 1；第 2 次：passed，各候选违规数 0')
     expect(report).toContain('| 5 | 右手 | #8 | pull |')
     expect(report).toContain('定点，需要发力并精准抓点')
   })
