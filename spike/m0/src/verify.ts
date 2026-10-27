@@ -39,6 +39,8 @@ export interface Warning {
   step: number
   rule: WarningId
   detail: string
+  /** 涉及的全部步骤（一条提示覆盖多步时填写） */
+  steps?: number[]
 }
 
 export interface VerifyResult {
@@ -256,6 +258,7 @@ function slabTwistWarning(route: Route, frames: Frame[]): Warning[] {
   return [
     {
       step: twisted[0]!,
+      steps: twisted,
       rule: 'S5',
       detail: `正墙（${route.wall.angleDeg}°）上第 ${twisted.join('、')} 步用了侧身或扭转；正墙通常正身站立，靠踩墙、高脚和重心平移，确认这些步骤真的需要侧身`,
     },

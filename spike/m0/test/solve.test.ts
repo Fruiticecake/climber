@@ -124,6 +124,63 @@ describe('solveRoute（剧本）', () => {
   })
 })
 
+describe('solveRoute（质量重试）', () => {
+  const route = routeById('c-slab-balance')
+  type Reply = { betas: Array<{ steps: Array<{ hips: string }> }> }
+  const loadSquare = async (): Promise<Reply> =>
+    structuredClone((await import('../fixtures/mock/c-slab-balance.json')).default.replies[0]) as Reply
+  /** 把第 1..n 步改成侧身，制造 S5 提示（侧身只会放宽伸展上限，硬规则仍然通过） */
+  const twisted = async (n: number): Promise<string> => {
+    const reply = await loadSquare()
+    reply.betas[0]!.steps.slice(0, n).forEach((s) => (s.hips = 'left-in'))
+    return JSON.stringify(reply)
+  }
+  const square = async () => JSON.stringify(await loadSquare())
+
+  it('通过硬规则但有 S5：反馈提示再改一次，改好后采用新的', async () => {
+    const { provider, received } = scripted([await twisted(3), await square()])
+    const r = await solveRoute(route, provider, techniques)
+    expect(r.attempts.map((a) => a.outcome)).toEqual(['quality-retry', 'passed'])
+    expect(received[1]).toContain('通过了全部硬规则，但爬法质量还有问题')
+    expect(received[1]).toContain('第 1、2、3 步')
+    expect(r.passed).toBe(true)
+    expect(r.best!.result.warnings.map((w) => w.rule)).not.toContain('S5')
+  })
+
+  it('改后更差时保留上一次的候选', async () => {
+    const { provider } = scripted([await twisted(2), await twisted(5)])
+    const r = await solveRoute(route, provider, techniques)
+    expect(r.attempts.map((a) => a.outcome)).toEqual(['quality-retry', 'passed'])
+    expect(r.attempts[1]!.detail).toBe('改后质量没有变好，保留上一次的候选')
+    expect(r.best!.result.warnings.find((w) => w.rule === 'S5')!.steps).toEqual([1, 2])
+  })
+
+  it('改后违反硬规则时不再重试，用之前通过的候选', async () => {
+    const broken = (await loadSquare()) as unknown as { betas: Array<{ steps: Array<{ to: number | null }> }> }
+    broken.betas[0]!.steps[0]!.to = 99
+    const { provider, received } = scripted([await twisted(2), JSON.stringify(broken)])
+    const r = await solveRoute(route, provider, techniques)
+    expect(r.attempts.map((a) => a.outcome)).toEqual(['quality-retry', 'violations'])
+    expect(received).toHaveLength(2)
+    expect(r.passed).toBe(true)
+    expect(r.best!.result.violations).toEqual([])
+  })
+
+  it('质量重试只做一次', async () => {
+    const { provider, received } = scripted([await twisted(3), await twisted(2), await square()])
+    const r = await solveRoute(route, provider, techniques)
+    expect(received).toHaveLength(2)
+    expect(r.best!.result.warnings.find((w) => w.rule === 'S5')!.steps).toEqual([1, 2])
+  })
+
+  it('maxQualityRetries 为 0 时不做质量重试', async () => {
+    const { provider, received } = scripted([await twisted(3)])
+    const r = await solveRoute(route, provider, techniques, { maxQualityRetries: 0 })
+    expect(received).toHaveLength(1)
+    expect(r.attempts.map((a) => a.outcome)).toEqual(['passed'])
+  })
+})
+
 describe('renderFeedback', () => {
   it('说明违规的具体数值和可以保留的步骤', async () => {
     const bad = (await import('../fixtures/mock/b-overhang-heelhook.json')).default.replies[0]!.betas[0]!

@@ -128,6 +128,10 @@ export function buildFormatErrorFeedback(error: string): string {
   return `上一次的输出无法解析为要求的 JSON：${error}\n请严格按照输出格式，重新输出完整的 JSON（包含全部候选）。`
 }
 
+export function buildQualityFeedback(label: string, issues: string[]): string {
+  return `候选「${label}」通过了全部硬规则，但爬法质量还有问题：\n${issues.map((s) => `- ${s}`).join('\n')}\n\n请在继续满足全部规则的前提下改进这些步骤，重新输出完整的 JSON（包含全部候选）。如果你确信某一步必须这样做，保留它，并在 why 里说明原因。`
+}
+
 export function buildViolationFeedback(perCandidate: string[]): string {
   return `你的候选都没有通过校验，问题如下：\n\n${perCandidate.join('\n\n')}\n\n请修正后重新输出完整的 JSON（包含全部候选）。`
 }
