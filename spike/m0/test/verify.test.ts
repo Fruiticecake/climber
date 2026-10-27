@@ -199,6 +199,15 @@ describe('verify', () => {
     })
   })
 
+  it('R13：只能踩脚的点，手不能抓；脚可以踩', () => {
+    const footOnly: Route = { ...route, holds: [...route.holds, { id: 90, x: 210, y: 120, r: 5, role: 'foot-only' }] }
+    const hand = verify(footOnly, beta([step({ limb: 'RH', to: 90 }), ...toTop])).violations
+    expect(hand).toContainEqual(expect.objectContaining({ rule: 'R13', step: 1, limbs: ['RH'], holds: [90] }))
+    expect(renderViolation(hand.find((v) => v.rule === 'R13')!)).toBe('第 1 步（R13）：#90 是只能踩脚的点，手不能抓。')
+    const foot = verify(footOnly, beta([step({ limb: 'RF', to: 90, foot: 'front' }), ...toTop])).violations
+    expect(foot.map((v) => v.rule)).not.toContain('R13')
+  })
+
   describe('R12：不陡的墙上，挂脚要挂在侧面', () => {
     // 起点手 #1 在 (200,160)；170cm 的人：侧向至少 42.5cm，比手低至少 17cm
     const hooks: Route = {

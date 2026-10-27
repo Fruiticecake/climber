@@ -11,7 +11,7 @@ const STYLE = `
 :root {
   --bg: #121315; --panel: #1b1d20; --panel-2: #23262a; --line: #33373c;
   --text: #ecebe6; --muted: #9a9d9f; --chalk: #f4f1e8;
-  --left: #35d0c0; --right: #ff8a3d; --accent: #f4c84a;
+  --left: #35d0c0; --right: #ff8a3d; --accent: #f4c84a; --foot-hold: #c79bff;
   --bad: #ff6b6b; --warn: #f4c84a; --ok: #6fd08c;
   --radius: 14px; --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --font: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
@@ -109,15 +109,19 @@ if (PHOTO) {
   el('image', { href: PHOTO, x: 0, y: 0, width: D.width, height: D.height, filter: 'url(#grey)' }, svg);
   el('image', { href: PHOTO, x: 0, y: 0, width: D.width, height: D.height, 'clip-path': 'url(#route-holds)' }, svg);
 } else {
+  // 没有照片时按 Kilter 板的灯色画：起步绿、中间青、结束品红、脚点橙
+  const FILL = { 'start-hand': '#3ddc84', top: '#e45bd8', 'foot-only': '#f2a33a', 'start-foot': '#f2a33a', normal: '#47c6e6' };
   el('rect', { x: 0, y: 0, width: D.width, height: D.height, fill: '#2a2d31' }, svg);
-  D.holds.forEach((h) => el('circle', { cx: h.x, cy: h.y, r: h.r, fill: '#c9b458' }, svg));
+  D.holds.forEach((h) => el('circle', { cx: h.x, cy: h.y, r: h.r, fill: FILL[h.role] || '#c9b458', opacity: 0.55 }, svg));
 }
 const holdLayer = el('g', {}, svg);
+const RING = { top: 'var(--accent)', 'start-hand': 'var(--chalk)', 'foot-only': 'var(--foot-hold)', 'start-foot': 'var(--foot-hold)' };
+const PREFIX = { top: 'TOP ', 'start-hand': '起 ', 'foot-only': '脚 ', 'start-foot': '起脚 ' };
 D.holds.forEach((h) => {
-  const color = h.role === 'top' ? 'var(--accent)' : h.role === 'start-hand' ? 'var(--chalk)' : 'rgb(244 241 232 / 0.55)';
+  const color = RING[h.role] || 'rgb(244 241 232 / 0.55)';
   el('circle', { cx: h.x, cy: h.y, r: h.r * 1.35, fill: 'none', stroke: color, 'stroke-width': unit * 0.35, 'stroke-dasharray': h.role === 'normal' ? '' : unit * 0.9 }, holdLayer);
   const t = el('text', { x: h.x + h.r * 1.35 + unit * 0.4, y: h.y - h.r * 0.9, fill: color, 'font-size': unit * 2.1, 'font-family': 'ui-monospace, Consolas, monospace', 'font-weight': 700 }, holdLayer);
-  t.textContent = (h.role === 'top' ? 'TOP ' : h.role === 'start-hand' ? '起 ' : '') + '#' + h.id;
+  t.textContent = (PREFIX[h.role] || '') + '#' + h.id;
 });
 
 // 小人：躯干、四肢连线、头；四个肢体端点

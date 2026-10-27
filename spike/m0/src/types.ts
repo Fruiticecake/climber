@@ -1,7 +1,9 @@
 export const LIMBS = ['LH', 'RH', 'LF', 'RF'] as const
 export type Limb = (typeof LIMBS)[number]
 
-export const HOLD_ROLES = ['start-hand', 'start-foot', 'top', 'normal'] as const
+/** foot-only：只能踩脚的点（比如 Kilter 的橙色脚点），手不能抓 */
+export const HOLD_ROLES = ['start-hand', 'start-foot', 'top', 'normal', 'foot-only'] as const
+export type HoldRole = (typeof HOLD_ROLES)[number]
 export const HOLD_TYPES = ['jug', 'crimp', 'sloper', 'pinch', 'pocket', 'volume'] as const
 
 export interface Hold {
@@ -10,7 +12,7 @@ export interface Hold {
   x: number
   y: number
   r: number
-  role: (typeof HOLD_ROLES)[number]
+  role: HoldRole
   type?: (typeof HOLD_TYPES)[number]
   /** 受力方向：0 往下拉，90 往右侧拉，180 反提，270 往左侧拉 */
   pullDirDeg?: number
@@ -51,6 +53,8 @@ export interface Route {
   body: Body
   holds: Hold[]
   photo?: RoutePhoto
+  /** 线路从哪来（比如 Kilter 的原始编号、视频链接）；只给人看，不交给模型 */
+  source?: Record<string, unknown>
 }
 
 /** 每个肢体所在的点位 id；脚为 null 表示踩墙或悬空 */

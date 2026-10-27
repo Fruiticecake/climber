@@ -76,4 +76,5 @@ export const RouteSchema = z.object({
       originY: z.number(),
     })
     .optional(),
+  source: z.record(z.string(), z.unknown()).optional(),
 })

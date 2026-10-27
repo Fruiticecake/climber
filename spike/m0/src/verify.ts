@@ -27,7 +27,7 @@ export const TWIST_REACH_BONUS = 1.1
 export const DYNAMIC_REACH_BONUS = 1.1
 export const PULL_DIR_TOLERANCE_DEG = 60
 
-export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10' | 'R11' | 'R12'
+export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10' | 'R11' | 'R12' | 'R13'
 export type WarningId = 'S1' | 'S3' | 'S4' | 'S5'
 
 /** 侧身类技巧：正墙上很少需要 */
@@ -275,8 +275,8 @@ function checkHookPlacement(frame: Frame, ctx: RouteContext, lh: Hold, rh: Hold,
   return out
 }
 
-/** 步骤本身的合法性（R5、R8、R9、R10） */
-function checkStep(frames: Frame[], i: number): Violation[] {
+/** 步骤本身的合法性（R5、R8、R9、R10、R13） */
+function checkStep(frames: Frame[], i: number, byId: Map<number, Hold>): Violation[] {
   const frame = frames[i]!
   const prev = frames[i - 1]!
   const step = frame.step!
@@ -285,6 +285,9 @@ function checkStep(frames: Frame[], i: number): Violation[] {
 
   if (step.to === null && (isHand || (step.foot !== 'smear' && step.foot !== 'flag')))
     out.push({ step: i, rule: 'R5', limbs: [step.limb], holds: [], detail: isHand ? '手必须落在点上' : '脚离开点位时要标明 smear 或 flag' })
+
+  if (isHand && step.to !== null && byId.get(step.to)?.role === 'foot-only')
+    out.push({ step: i, rule: 'R13', limbs: [step.limb], holds: [step.to], detail: `#${step.to} 是只能踩脚的点，手不能抓` })
 
   if (step.to !== null && prev.pose[step.limb] === step.to)
     out.push({ step: i, rule: 'R8', limbs: [step.limb], holds: [step.to], detail: '这一步没有移动' })
@@ -380,7 +383,7 @@ export function verify(route: Route, beta: Beta): VerifyResult {
     violations.push(...check.violations.filter((v) => !prevKeys.has(violationKey(v))))
     prevKeys = new Set(check.violations.map(violationKey))
     stretched = check.stretched
-    if (i > 0) violations.push(...checkStep(frames, i))
+    if (i > 0) violations.push(...checkStep(frames, i, byId))
   })
 
   if (beta.steps.length > MAX_STEPS)

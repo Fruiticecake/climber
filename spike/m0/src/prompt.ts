@@ -55,7 +55,7 @@ export function buildSystemPrompt(techniques: Technique[]): string {
 
 ## 坐标系
 - 所有坐标都是墙面坐标，单位 cm，原点在墙面左下角，x 向右，y 向上。
-- 每个岩点给出中心坐标 (x, y) 和半径 r；role 为 start-hand（起点手点）、start-foot（起点脚点）、top（终点）、normal。
+- 每个岩点给出中心坐标 (x, y) 和半径 r；role 为 start-hand（起点手点）、start-foot（起点脚点）、top（终点）、normal、foot-only（只能踩脚，手不能抓）。
 - type 和 pullDirDeg 是可选信息：pullDirDeg 0 表示往下拉，90 表示往右侧拉，180 表示反提，270 表示往左侧拉。
 - 墙角度 angleDeg：负数是正墙（slab），0 是直墙，正数是仰角。请结合墙角度选择技巧。
 
@@ -70,6 +70,7 @@ export function buildSystemPrompt(techniques: Technique[]): string {
 8. 手和脚不能同时在同一个点上：手离开之后脚才能踩上去（techniques 含 rock-over 或 mantle 时除外）。
 9. 身体不能压得太紧：普通踩点的脚必须比双手平均高度低一定距离（具体数值见"身体限制"），否则身体会被折成一团，真人做不到。挂脚跟、勾脚尖不受限制；techniques 含 rock-over 或 mantle 的那一步、以及它前面紧挨着的上脚那一步允许，之后这只脚不动时继续允许。只标 high-step 不算。
 10. 墙角度小于 ${STEEP_MIN_ANGLE_DEG}° 时，挂脚跟、勾脚尖必须挂在身体侧面、并且比双手低（具体数值见"身体限制"），靠侧向拉力把身体拉向墙。不能用挂脚把脚放到手旁边或手上方来绕开第 9 条。墙角度达到 ${STEEP_MIN_ANGLE_DEG}° 的仰角墙上不受这条限制。这条每一步都检查：手移动后挂脚不再在侧面或不再比手低，也算违规，应该先换脚。
+11. role 为 foot-only 的点只能踩脚，手不能抓。
 
 ## 爬法要求
 - 优先选择省力的身体姿势：手臂尽量伸直挂着，髋贴墙，先上脚再上手。

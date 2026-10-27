@@ -36,7 +36,8 @@ function scripted(replies: ScriptedReply[]): { provider: SolverProvider; receive
 
 describe('样例数据', () => {
   it('样例线路和实拍线路都能读取', () => {
-    expect(routes.map((r) => r.id)).toEqual(['a-sidepull-twist', 'b-overhang-heelhook', 'c-slab-balance', 'd-gym-blue-tag-yellow'])
+    // routes/ 里还会有从 Kilter 导出的线路，这里只确认这四条都在
+    expect(routes.map((r) => r.id)).toEqual(expect.arrayContaining(['a-sidepull-twist', 'b-overhang-heelhook', 'c-slab-balance', 'd-gym-blue-tag-yellow']))
   })
 
   it('技巧词典里有校验器依赖的 cross', () => {

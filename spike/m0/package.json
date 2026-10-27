@@ -6,6 +6,7 @@
   "scripts": {
     "m0": "tsx src/run.ts",
     "preview": "tsx src/preview-cli.ts",
+    "kilter": "tsx src/kilter-cli.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
