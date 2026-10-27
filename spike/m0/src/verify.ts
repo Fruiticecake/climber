@@ -14,6 +14,11 @@ export const HOOK_ABOVE_TOP_HAND_MAX_CM = 40
 export const FOOT_BELOW_HANDS_MIN_RATIO = 0.2
 /** 翻上、撑上时脚可以贴近甚至略高于手 */
 export const COMPRESSION_EXEMPT_TECHNIQUES = ['rock-over', 'mantle']
+/** 墙角度达到这个值算明显的仰角：挂脚是常规手段 */
+export const STEEP_MIN_ANGLE_DEG = 15
+/** 不陡的墙上，挂脚要挂在侧面：离双手中点的水平距离、比双手平均高度低多少（按身高） */
+export const HOOK_SIDE_MIN_RATIO = 0.25
+export const HOOK_BELOW_HANDS_MIN_RATIO = 0.1
 /** 墙角度小于这个值算正墙 */
 export const SLAB_MAX_ANGLE_DEG = 0
 export const CROSS_TOLERANCE_CM = 15
@@ -22,7 +27,7 @@ export const TWIST_REACH_BONUS = 1.1
 export const DYNAMIC_REACH_BONUS = 1.1
 export const PULL_DIR_TOLERANCE_DEG = 60
 
-export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10' | 'R11'
+export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10' | 'R11' | 'R12'
 export type WarningId = 'S1' | 'S3' | 'S4' | 'S5'
 
 /** 侧身类技巧：正墙上很少需要 */
@@ -58,6 +63,9 @@ export interface Limits {
   footSpanCm: number
   /** 普通踩点比双手平均高度至少低多少 */
   footBelowHandsMinCm: number
+  /** 不陡的墙上挂脚：离双手中点至少多远、比双手平均高度至少低多少 */
+  hookSideMinCm: number
+  hookBelowHandsMinCm: number
 }
 
 export function limitsFor(body: Body): Limits {
@@ -67,6 +75,8 @@ export function limitsFor(body: Body): Limits {
     handFootCm: (dims.shoulderHeightCm + dims.armLengthCm) * HAND_FOOT_FACTOR,
     footSpanCm: body.heightCm * FOOT_SPAN_RATIO,
     footBelowHandsMinCm: body.heightCm * FOOT_BELOW_HANDS_MIN_RATIO,
+    hookSideMinCm: body.heightCm * HOOK_SIDE_MIN_RATIO,
+    hookBelowHandsMinCm: body.heightCm * HOOK_BELOW_HANDS_MIN_RATIO,
   }
 }
 
@@ -135,8 +145,16 @@ interface FrameCheck {
   stretched: Stretched
 }
 
-/** 单帧的几何检查（R2、R3、R4、R6、R7、R11） */
-function checkFrame(frame: Frame, byId: Map<number, Hold>, limits: Limits, carried: Stretched, nextTechniques: string[]): FrameCheck {
+/** 整条线路不变的检查条件 */
+interface RouteContext {
+  byId: Map<number, Hold>
+  limits: Limits
+  wallAngleDeg: number
+}
+
+/** 单帧的几何检查（R2、R3、R4、R6、R7、R11、R12） */
+function checkFrame(frame: Frame, ctx: RouteContext, carried: Stretched, nextTechniques: string[]): FrameCheck {
+  const { byId, limits } = ctx
   const { pose } = frame
   const out: Violation[] = []
   const stretched: Stretched = new Map()
@@ -219,8 +237,42 @@ function checkFrame(frame: Frame, byId: Map<number, Hold>, limits: Limits, carri
           detail: 'hook',
         })
     }
+    const cappedHooks = new Set(out.filter((v) => v.rule === 'R6' && v.detail === 'hook').map((v) => v.limbs[0]))
+    out.push(...checkHookPlacement(frame, ctx, lh, rh, feet.filter(([l]) => !cappedHooks.has(l))))
   }
   return { violations: out, stretched }
+}
+
+const cmText = (n: number) => `${Math.round(n)}cm`
+
+/**
+ * R12：不陡的墙上，挂脚跟、勾脚尖要挂在身体侧面、比手低，靠侧向拉力把身体拉向墙；
+ * 挂在手旁边或手上方的挂脚没有东西可拉，只是把脚放高的借口。陡墙上不限制（只有 R6 的高度上限）。
+ */
+function checkHookPlacement(frame: Frame, ctx: RouteContext, lh: Hold, rh: Hold, feet: Array<['LF' | 'RF', Hold | null]>): Violation[] {
+  const { limits, wallAngleDeg } = ctx
+  if (wallAngleDeg >= STEEP_MIN_ANGLE_DEG) return []
+  const handsX = (lh.x + rh.x) / 2
+  const handsY = (lh.y + rh.y) / 2
+  const out: Violation[] = []
+  for (const [footLimb, f] of feet) {
+    const tech = frame.footTech[footLimb]
+    if (!f || (tech !== 'heel-hook' && tech !== 'toe-hook')) continue
+    const side = Math.abs(f.x - handsX)
+    const below = handsY - f.y
+    if (side >= limits.hookSideMinCm && below >= limits.hookBelowHandsMinCm) continue
+    const now = below >= 0 ? `现在 ${cmText(below)}` : `现在反而高出 ${cmText(-below)}`
+    out.push({
+      step: frame.index,
+      rule: 'R12',
+      limbs: [footLimb],
+      holds: [f.id],
+      actualCm: side,
+      limitCm: limits.hookSideMinCm,
+      detail: `挂脚：墙只有 ${wallAngleDeg}°，不算陡，挂脚要挂在身体侧面——离双手中点水平至少 ${cmText(limits.hookSideMinCm)}（现在 ${cmText(side)}），并且比双手平均高度至少低 ${cmText(limits.hookBelowHandsMinCm)}（${now}）；否则改成普通踩点，或者先把手移开、移高再挂`,
+    })
+  }
+  return out
 }
 
 /** 步骤本身的合法性（R5、R8、R9、R10） */
@@ -324,7 +376,7 @@ export function verify(route: Route, beta: Beta): VerifyResult {
   let prevKeys = new Set<string>()
   let stretched: Stretched = new Map()
   frames.forEach((frame, i) => {
-    const check = checkFrame(frame, byId, limits, stretched, frames[i + 1]?.step?.techniques ?? [])
+    const check = checkFrame(frame, { byId, limits, wallAngleDeg: route.wall.angleDeg }, stretched, frames[i + 1]?.step?.techniques ?? [])
     violations.push(...check.violations.filter((v) => !prevKeys.has(violationKey(v))))
     prevKeys = new Set(check.violations.map(violationKey))
     stretched = check.stretched

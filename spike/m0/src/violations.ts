@@ -31,6 +31,8 @@ function describeRule(v: Violation): string {
         : `${a ? LIMB_NAMES[a] : ''}（#${ha}）比双手平均高度高出 ${cm(v.actualCm)}（上限 ${cm(v.limitCm)}），除非是挂脚跟或勾脚尖`
     case 'R11':
       return `${a ? LIMB_NAMES[a] : ''}（#${ha}）只比双手平均高度低 ${cm(v.actualCm)}，至少要低 ${cm(v.limitCm)}，身体压不了这么紧；先把手移高再上脚，或者用挂脚、rock-over、mantle`
+    case 'R12':
+      return `${a ? LIMB_NAMES[a] : ''}（#${ha}）${v.detail ?? ''}`
     case 'R7':
       return `${pair}左右交叉了，如果是有意的交叉，请在 techniques 里加上 "cross"`
     default:

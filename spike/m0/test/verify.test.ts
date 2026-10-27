@@ -199,6 +199,57 @@ describe('verify', () => {
     })
   })
 
+  describe('R12：不陡的墙上，挂脚要挂在侧面', () => {
+    // 起点手 #1 在 (200,160)；170cm 的人：侧向至少 42.5cm，比手低至少 17cm
+    const hooks: Route = {
+      ...route,
+      holds: [
+        ...route.holds,
+        { id: 60, x: 190, y: 140, r: 5, role: 'normal' },
+        { id: 80, x: 120, y: 130, r: 5, role: 'normal' },
+        { id: 81, x: 120, y: 175, r: 5, role: 'normal' },
+      ],
+    }
+    const hookRules = (r: Route, to: number) =>
+      verify(r, beta([step({ limb: 'LF', to, foot: 'heel-hook' }), step({ limb: 'LF', to: 10, foot: 'front' }), ...toTop])).violations
+
+    it('挂在手旁边：违规，说明需要的侧向距离和高度', () => {
+      const v = hookRules(hooks, 60).filter((x) => x.rule === 'R12')
+      expect(v).toEqual([expect.objectContaining({ step: 1, limbs: ['LF'], holds: [60] })])
+      expect(renderViolation(v[0]!)).toBe(
+        '第 1 步（R12）：左脚（#60）挂脚：墙只有 0°，不算陡，挂脚要挂在身体侧面——离双手中点水平至少 43cm（现在 10cm），并且比双手平均高度至少低 17cm（现在 20cm）；否则改成普通踩点，或者先把手移开、移高再挂。',
+      )
+    })
+
+    it('挂在侧面、比手低：允许', () => {
+      expect(hookRules(hooks, 80).map((x) => x.rule)).not.toContain('R12')
+    })
+
+    it('挂在侧面但比手高：违规', () => {
+      expect(hookRules(hooks, 81).map((x) => x.rule)).toContain('R12')
+    })
+
+    it('勾脚尖同样要求', () => {
+      const v = verify(hooks, beta([step({ limb: 'LF', to: 60, foot: 'toe-hook' }), step({ limb: 'LF', to: 10, foot: 'front' }), ...toTop])).violations
+      expect(v.map((x) => x.rule)).toContain('R12')
+    })
+
+    it('陡墙（≥15°）上挂在手旁边也允许', () => {
+      const steep: Route = { ...hooks, wall: { ...hooks.wall, angleDeg: 15 } }
+      expect(hookRules(steep, 60).map((x) => x.rule)).not.toContain('R12')
+    })
+
+    it('挂脚之后手移动，挂脚不再在侧面时也报', () => {
+      // 挂好 #80（120,130）后左手移到 #2（150,200）：双手中点 x=175，侧向 55cm，仍合格
+      const ok = verify(hooks, beta([step({ limb: 'LF', to: 80, foot: 'heel-hook' }), step({ limb: 'LH', to: 2 }), step({ limb: 'LF', to: 10, foot: 'front' }), ...toTop])).violations
+      expect(ok.map((x) => x.rule)).not.toContain('R12')
+      // 左手改移到挂脚正上方的 #82（115,200）：双手中点 x=157.5，侧向只剩 37.5cm，这一步报违规
+      const above: Route = { ...hooks, holds: [...hooks.holds, { id: 82, x: 115, y: 200, r: 5, role: 'normal' }] }
+      const bad = verify(above, beta([step({ limb: 'LF', to: 80, foot: 'heel-hook' }), step({ limb: 'LH', to: 82 }), step({ limb: 'LF', to: 10, foot: 'front' }), ...toTop])).violations
+      expect(bad).toContainEqual(expect.objectContaining({ rule: 'R12', step: 2, holds: [80] }))
+    })
+  })
+
   describe('踩墙的脚按它离开的点算位置', () => {
     // #70 离右脚起点 #11 有 171cm，超过双脚跨度上限 153cm；离起点手 #1 170cm，没超手脚跨度
     const wide: Route = { ...route, holds: [...route.holds, { id: 70, x: 50, y: 60, r: 5, role: 'normal' }] }

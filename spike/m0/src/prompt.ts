@@ -10,11 +10,9 @@ import {
   limitsFor,
   MAX_STEPS,
   SLAB_MAX_ANGLE_DEG,
+  STEEP_MIN_ANGLE_DEG,
   TWIST_REACH_BONUS,
 } from './verify.js'
-
-/** 墙角度达到这个值算明显的仰角 */
-export const STEEP_MIN_ANGLE_DEG = 15
 
 /** 按墙角度给出技巧方向，避免在正墙上套用仰角的技巧 */
 export function wallStyleHint(angleDeg: number): string {
@@ -71,6 +69,7 @@ export function buildSystemPrompt(techniques: Technique[]): string {
 7. 不要回到出现过的姿态，总步数不超过 ${MAX_STEPS}。
 8. 手和脚不能同时在同一个点上：手离开之后脚才能踩上去（techniques 含 rock-over 或 mantle 时除外）。
 9. 身体不能压得太紧：普通踩点的脚必须比双手平均高度低一定距离（具体数值见"身体限制"），否则身体会被折成一团，真人做不到。挂脚跟、勾脚尖不受限制；techniques 含 rock-over 或 mantle 的那一步、以及它前面紧挨着的上脚那一步允许，之后这只脚不动时继续允许。只标 high-step 不算。
+10. 墙角度小于 ${STEEP_MIN_ANGLE_DEG}° 时，挂脚跟、勾脚尖必须挂在身体侧面、并且比双手低（具体数值见"身体限制"），靠侧向拉力把身体拉向墙。不能用挂脚把脚放到手旁边或手上方来绕开第 9 条。墙角度达到 ${STEEP_MIN_ANGLE_DEG}° 的仰角墙上不受这条限制。这条每一步都检查：手移动后挂脚不再在侧面或不再比手低，也算违规，应该先换脚。
 
 ## 爬法要求
 - 优先选择省力的身体姿势：手臂尽量伸直挂着，髋贴墙，先上脚再上手。
@@ -104,6 +103,11 @@ export function buildRoutePrompt(route: Route, candidates: number): string {
       ),
     )
     .join('\n')
+  // 陡墙上挂脚不限位置，不写这一行
+  const hookLimit =
+    route.wall.angleDeg < STEEP_MIN_ANGLE_DEG
+      ? `\n- 挂脚跟、勾脚尖（这面墙不算陡）：离双手中点水平至少 ${Math.round(limits.hookSideMinCm)}cm，并且比双手平均高度至少低 ${Math.round(limits.hookBelowHandsMinCm)}cm`
+      : ''
   return `## 线路：${route.name}
 ${route.description}
 
@@ -118,7 +122,7 @@ ${wallStyleHint(route.wall.angleDeg)}
 - 双手跨度 ≤ ${Math.round(limits.handSpanCm)}cm
 - 任意手到任意脚 ≤ ${Math.round(limits.handFootCm)}cm
 - 双脚跨度 ≤ ${Math.round(limits.footSpanCm)}cm
-- 普通踩点比双手平均高度至少低 ${Math.round(limits.footBelowHandsMinCm)}cm
+- 普通踩点比双手平均高度至少低 ${Math.round(limits.footBelowHandsMinCm)}cm${hookLimit}
 
 ## 岩点（编号 | 中心 | 半径 | 角色 | 类型 | 受力方向）
 ${holds}
