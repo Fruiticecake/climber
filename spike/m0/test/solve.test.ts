@@ -15,15 +15,19 @@ const techniques = loadTechniques(path.join(root, 'config/techniques.yaml'))
 const mock = new MockProvider(path.join(root, 'fixtures/mock'))
 const routeById = (id: string) => routes.find((r) => r.id === id)!
 
-/** 按剧本回复、并记录收到的消息的测试用模型 */
-function scripted(replies: string[]): { provider: SolverProvider; received: string[] } {
+type ScriptedReply = string | { text: string; stopReason: string }
+
+/** 按剧本回复、并记录收到的消息的测试用模型；只给文本时停止原因为 end_turn */
+function scripted(replies: ScriptedReply[]): { provider: SolverProvider; received: string[] } {
   const received: string[] = []
   const provider: SolverProvider = {
     id: 'scripted',
     createSession: () => ({
       async send(text: string): Promise<ProviderReply> {
         received.push(text)
-        return { text: replies[received.length - 1] ?? '', usage: { inputTokens: 10, outputTokens: 20 }, stopReason: 'end_turn' }
+        const reply = replies[received.length - 1] ?? ''
+        const { text: replyText, stopReason } = typeof reply === 'string' ? { text: reply, stopReason: 'end_turn' } : reply
+        return { text: replyText, usage: { inputTokens: 10, outputTokens: 20 }, stopReason }
       },
     }),
   }
@@ -31,8 +35,8 @@ function scripted(replies: string[]): { provider: SolverProvider; received: stri
 }
 
 describe('样例数据', () => {
-  it('三条样例线路都能读取', () => {
-    expect(routes.map((r) => r.id)).toEqual(['a-sidepull-twist', 'b-overhang-heelhook', 'c-slab-balance'])
+  it('样例线路和实拍线路都能读取', () => {
+    expect(routes.map((r) => r.id)).toEqual(['a-sidepull-twist', 'b-overhang-heelhook', 'c-slab-balance', 'd-gym-blue-tag-yellow'])
   })
 
   it('技巧词典里有校验器依赖的 cross', () => {
@@ -42,6 +46,7 @@ describe('样例数据', () => {
   it('提示词包含技巧词典和这条线路的身体限制', () => {
     expect(buildSystemPrompt(techniques)).toContain('twist-lock')
     expect(buildRoutePrompt(routeById('a-sidepull-twist'), 2)).toContain('双手跨度 ≤ 163cm')
+    expect(buildRoutePrompt(routeById('a-sidepull-twist'), 2)).toContain('普通踩点比双手平均高度至少低 34cm')
   })
 
   it('按墙角度给出不同的技巧方向', () => {
@@ -103,6 +108,29 @@ describe('solveRoute（剧本）', () => {
     expect(r.attempts).toHaveLength(3)
     expect(r.best!.result.violations.length).toBeGreaterThan(0)
     expect(received[1]).toContain('第 1～4 步合法，请保留')
+  })
+
+  it('每次尝试都记录停止原因', async () => {
+    const valid = JSON.stringify((await import('../fixtures/mock/b-overhang-heelhook.json')).default.replies[1])
+    const r = await solveRoute(route, scripted([valid]).provider, techniques)
+    expect(r.attempts[0]!.stopReason).toBe('end_turn')
+  })
+
+  it('回复被长度上限截断时，要求少推理、直接输出 JSON，而不是重发格式错误', async () => {
+    const valid = JSON.stringify((await import('../fixtures/mock/b-overhang-heelhook.json')).default.replies[1])
+    const { provider, received } = scripted([{ text: '', stopReason: 'length' }, valid])
+    const r = await solveRoute(route, provider, techniques)
+    expect(r.attempts.map((a) => a.outcome)).toEqual(['truncated', 'passed'])
+    expect(r.attempts[0]!.stopReason).toBe('length')
+    expect(received[1]).toContain('被长度上限截断')
+    expect(received[1]).not.toContain('无法解析')
+  })
+
+  it('Anthropic 的 max_tokens 也算截断；截断计入重试次数', async () => {
+    const cut = { text: '{"betas": [', stopReason: 'max_tokens' }
+    const r = await solveRoute(route, scripted([cut, cut, cut]).provider, techniques)
+    expect(r.attempts.map((a) => a.outcome)).toEqual(['truncated', 'truncated', 'truncated'])
+    expect(r.passed).toBe(false)
   })
 
   it('拒答时停止重试', async () => {
@@ -189,5 +217,11 @@ describe('renderFeedback', () => {
     const text = renderFeedback('技巧解', verify(route, bad as Parameters<typeof verify>[1]).violations)
     expect(text).toContain('第 5 步（R3）')
     expect(text).toContain('超过最大手脚跨度')
+  })
+
+  it('R11 说明脚离手多近、至少要多远', () => {
+    const text = renderFeedback('技巧解', [{ step: 4, rule: 'R11', limbs: ['RF'], holds: [10], actualCm: 0.5, limitCm: 34 }])
+    expect(text).toContain('右脚（#10）只比双手平均高度低 1cm，至少要低 34cm')
+    expect(text).toContain('第 1～3 步合法')
   })
 })

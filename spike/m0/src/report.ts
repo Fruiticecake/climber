@@ -24,12 +24,16 @@ function stepsTable(beta: Beta): string {
   return [head, start, ...rows].join('\n')
 }
 
+/** 正常结束的停止原因不写进报告，免得每次尝试都多一段 */
+const NORMAL_STOP_REASONS = ['end_turn', 'stop']
+
 function entrySection(entry: RunEntry): string {
   const { result } = entry
   const lines = [`### ${entry.modelId}`, '']
   const attempts = result.attempts.map((a) => {
     const counts = a.candidates.length > 0 ? `，各候选违规数 ${a.candidates.map((c) => c.result.violations.length).join('/')}` : ''
-    return `第 ${a.attempt} 次：${a.outcome}${a.detail ? `（${cell(a.detail)}）` : ''}${counts}`
+    const stop = a.stopReason && !NORMAL_STOP_REASONS.includes(a.stopReason) ? `，停止原因 ${a.stopReason}` : ''
+    return `第 ${a.attempt} 次：${a.outcome}${stop}${a.detail ? `（${cell(a.detail)}）` : ''}${counts}`
   })
   lines.push(`尝试记录：${attempts.join('；') || '无'}`, '')
   if (!result.best) return [...lines, '没有可展示的候选。', ''].join('\n')

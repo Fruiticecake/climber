@@ -4,6 +4,7 @@ import {
   buildQualityFeedback,
   buildRoutePrompt,
   buildSystemPrompt,
+  buildTruncatedFeedback,
   buildViolationFeedback,
 } from './prompt.js'
 import type { ProviderUsage, SolverProvider } from './providers/types.js'
@@ -17,6 +18,8 @@ export const MAX_QUALITY_RETRIES = 1
 export const DEFAULT_CANDIDATES = 2
 /** 硬规则都通过后，这些提示还会触发质量重试 */
 export const QUALITY_RULES: WarningId[] = ['S5']
+/** 回复因为长度上限被截断时的停止原因：OpenAI 兼容接口是 length，Anthropic 是 max_tokens */
+export const TRUNCATED_STOP_REASONS = ['length', 'max_tokens']
 
 export interface CandidateResult {
   beta: Beta
@@ -26,8 +29,10 @@ export interface CandidateResult {
 export interface AttemptLog {
   attempt: number
   usage: ProviderUsage
-  /** quality-retry：硬规则通过，但有质量提示，要求模型再改一次 */
-  outcome: 'passed' | 'quality-retry' | 'violations' | 'format-error' | 'refusal' | 'error'
+  /** quality-retry：硬规则通过，但有质量提示，要求模型再改一次；truncated：回复被长度上限截断，没有完整的 JSON */
+  outcome: 'passed' | 'quality-retry' | 'violations' | 'format-error' | 'truncated' | 'refusal' | 'error'
+  /** 模型返回的停止原因；调用出错时为 null */
+  stopReason: string | null
   detail?: string
   candidates: CandidateResult[]
 }
@@ -122,20 +127,23 @@ export async function solveRoute(
       reply = await session.send(message)
     } catch (error: unknown) {
       const detail = error instanceof Error ? error.message : String(error)
-      attempts.push({ attempt, usage: { inputTokens: 0, outputTokens: 0 }, outcome: 'error', detail, candidates: [] })
+      attempts.push({ attempt, usage: { inputTokens: 0, outputTokens: 0 }, outcome: 'error', stopReason: null, detail, candidates: [] })
       return done()
     }
 
-    if (reply.stopReason === 'refusal') {
-      attempts.push({ attempt, usage: reply.usage, outcome: 'refusal', candidates: [] })
+    const { usage, stopReason } = reply
+    if (stopReason === 'refusal') {
+      attempts.push({ attempt, usage, outcome: 'refusal', stopReason, candidates: [] })
       return done()
     }
 
     const parsed = parseReply(reply.text)
     if (!parsed.ok) {
-      attempts.push({ attempt, usage: reply.usage, outcome: 'format-error', detail: parsed.error, candidates: [] })
+      // 被截断时重发"格式错误"只会让模型把同样的长推理再来一遍，所以改成要求少推理、直接输出
+      const truncated = stopReason !== null && TRUNCATED_STOP_REASONS.includes(stopReason)
+      attempts.push({ attempt, usage, outcome: truncated ? 'truncated' : 'format-error', stopReason, detail: parsed.error, candidates: [] })
       if (passedEarlier || ++hardFailures > maxRetries) return done()
-      message = buildFormatErrorFeedback(parsed.error)
+      message = truncated ? buildTruncatedFeedback() : buildFormatErrorFeedback(parsed.error)
       continue
     }
 
@@ -143,7 +151,7 @@ export async function solveRoute(
     const passing = results.filter((r) => r.result.violations.length === 0)
 
     if (passing.length === 0) {
-      attempts.push({ attempt, usage: reply.usage, outcome: 'violations', candidates: results })
+      attempts.push({ attempt, usage, outcome: 'violations', stopReason, candidates: results })
       best = pickBest(results)
       // 质量重试把爬法改坏了：不再纠缠，用之前通过的那个
       if (passedEarlier || ++hardFailures > maxRetries) return done()
@@ -157,13 +165,13 @@ export async function solveRoute(
     passedEarlier = candidate
     if (qualityScore(candidate) === 0 || qualityRetriesLeft === 0) {
       const detail = previous && candidate === previous ? '改后质量没有变好，保留上一次的候选' : undefined
-      attempts.push({ attempt, usage: reply.usage, outcome: 'passed', detail, candidates: results })
+      attempts.push({ attempt, usage, outcome: 'passed', stopReason, detail, candidates: results })
       return done()
     }
 
     qualityRetriesLeft -= 1
     const issues = candidate.result.warnings.filter((w) => QUALITY_RULES.includes(w.rule)).map((w) => w.detail)
-    attempts.push({ attempt, usage: reply.usage, outcome: 'quality-retry', candidates: results })
+    attempts.push({ attempt, usage, outcome: 'quality-retry', stopReason, candidates: results })
     message = buildQualityFeedback(candidate.beta.label, issues)
   }
 }

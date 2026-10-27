@@ -7,7 +7,14 @@ const LIMB_NAMES: Record<Limb, string> = { LH: '左手', RH: '右手', LF: '左�
 
 const cm = (n: number | undefined) => `${Math.round(n ?? 0)}cm`
 
+const SMEAR_NOTE = '（踩墙的脚按它离开的点算位置，踩墙不能让脚跟着身体移走）'
+
 function describe(v: Violation): string {
+  const text = describeRule(v)
+  return v.detail === 'smear' ? `${text}${SMEAR_NOTE}` : text
+}
+
+function describeRule(v: Violation): string {
   const [a, b] = v.limbs
   const [ha, hb] = v.holds
   const pair = a && b ? `${LIMB_NAMES[a]}（#${ha}）和${LIMB_NAMES[b]}（#${hb}）` : ''
@@ -22,6 +29,8 @@ function describe(v: Violation): string {
       return v.detail === 'hook'
         ? `${a ? LIMB_NAMES[a] : ''}（#${ha}）挂脚跟或勾脚尖的位置比较高那只手还高出 ${cm(v.actualCm)}（上限 ${cm(v.limitCm)}），身体会倒过来，先把手移上去再挂`
         : `${a ? LIMB_NAMES[a] : ''}（#${ha}）比双手平均高度高出 ${cm(v.actualCm)}（上限 ${cm(v.limitCm)}），除非是挂脚跟或勾脚尖`
+    case 'R11':
+      return `${a ? LIMB_NAMES[a] : ''}（#${ha}）只比双手平均高度低 ${cm(v.actualCm)}，至少要低 ${cm(v.limitCm)}，身体压不了这么紧；先把手移高再上脚，或者用挂脚、rock-over、mantle`
     case 'R7':
       return `${pair}左右交叉了，如果是有意的交叉，请在 techniques 里加上 "cross"`
     default:

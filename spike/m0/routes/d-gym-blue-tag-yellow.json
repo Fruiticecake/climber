@@ -1,0 +1,24 @@
+{
+  "id": "d-gym-blue-tag-yellow",
+  "name": "D 岩馆实拍：蓝标黄点",
+  "description": "用户在岩馆拍的真实线路（照片没有放进仓库）：起点在右下方的黄色把手，先往左上横移，再沿左上方的几个大黄点往右上到 TOP。坐标是从照片按约 1.6 像素/cm 估算的，没有做透视校正；墙由几个折面组成，这里统一按 10° 微仰处理。",
+  "wall": { "widthCm": 510, "heightCm": 430, "angleDeg": 10 },
+  "body": { "heightCm": 170, "armSpanCm": 172 },
+  "holds": [
+    { "id": 1, "x": 270, "y": 403, "r": 10, "role": "top" },
+    { "id": 2, "x": 153, "y": 319, "r": 18, "role": "normal" },
+    { "id": 3, "x": 181, "y": 341, "r": 16, "role": "normal" },
+    { "id": 4, "x": 222, "y": 371, "r": 11, "role": "normal" },
+    { "id": 5, "x": 108, "y": 241, "r": 10, "role": "normal" },
+    { "id": 6, "x": 238, "y": 253, "r": 10, "role": "normal" },
+    { "id": 7, "x": 187, "y": 202, "r": 11, "role": "normal" },
+    { "id": 8, "x": 153, "y": 134, "r": 13, "role": "normal" },
+    { "id": 9, "x": 278, "y": 208, "r": 9, "role": "normal" },
+    { "id": 10, "x": 325, "y": 188, "r": 11, "role": "normal" },
+    { "id": 11, "x": 369, "y": 169, "r": 8, "role": "normal" },
+    { "id": 12, "x": 373, "y": 121, "r": 11, "role": "start-hand" },
+    { "id": 13, "x": 328, "y": 74, "r": 8, "role": "normal" },
+    { "id": 14, "x": 408, "y": 55, "r": 9, "role": "normal" },
+    { "id": 15, "x": 361, "y": 31, "r": 8, "role": "normal" }
+  ]
+}

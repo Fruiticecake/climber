@@ -63,13 +63,14 @@ export function buildSystemPrompt(techniques: Technique[]): string {
 
 ## 规则（会被程序严格校验）
 1. 起始姿态双手在起点手点上；结束时双手都要在 TOP 上停稳（可以并手）。
-2. 每一步只移动一个肢体。手必须落在点上；脚可以 to: null，但只能是 smear（踩墙）或 flag（旗式）。
+2. 每一步只移动一个肢体。手必须落在点上；脚可以 to: null，但只能是 smear（踩墙）或 flag（旗式）。踩墙的脚贴在它刚离开的那个点附近，跨度检查按那个点算，不会跟着身体移走。
 3. 距离按岩点边缘计算。双手跨度、手脚跨度、双脚跨度都有上限，具体数值见每条线路的"身体限制"。
 4. 髋贴墙（hips 为 left-in 或 right-in）时，贴墙一侧的手负责锁定，对侧的手伸展上限放宽到 ${TWIST_REACH_BONUS} 倍；motion 为 deadpoint 或 dyno 时也放宽到 ${TWIST_REACH_BONUS} 倍。
 5. 脚不能比双手平均高度高出 ${FOOT_ABOVE_HANDS_TOLERANCE_CM}cm 以上，除非这只脚是 heel-hook 或 toe-hook；但挂脚跟、勾脚尖也不能比较高那只手再高出 ${HOOK_ABOVE_TOP_HAND_MAX_CM}cm 以上（否则身体会倒过来）。
 6. 左手不能在右手右边超过 ${CROSS_TOLERANCE_CM}cm（脚同理），有意交叉时在 techniques 里写 "cross"。
 7. 不要回到出现过的姿态，总步数不超过 ${MAX_STEPS}。
 8. 手和脚不能同时在同一个点上：手离开之后脚才能踩上去（techniques 含 rock-over 或 mantle 时除外）。
+9. 身体不能压得太紧：普通踩点的脚必须比双手平均高度低一定距离（具体数值见"身体限制"），否则身体会被折成一团，真人做不到。挂脚跟、勾脚尖不受限制；techniques 含 rock-over 或 mantle 的那一步、以及它前面紧挨着的上脚那一步允许，之后这只脚不动时继续允许。只标 high-step 不算。
 
 ## 爬法要求
 - 优先选择省力的身体姿势：手臂尽量伸直挂着，髋贴墙，先上脚再上手。
@@ -117,6 +118,7 @@ ${wallStyleHint(route.wall.angleDeg)}
 - 双手跨度 ≤ ${Math.round(limits.handSpanCm)}cm
 - 任意手到任意脚 ≤ ${Math.round(limits.handFootCm)}cm
 - 双脚跨度 ≤ ${Math.round(limits.footSpanCm)}cm
+- 普通踩点比双手平均高度至少低 ${Math.round(limits.footBelowHandsMinCm)}cm
 
 ## 岩点（编号 | 中心 | 半径 | 角色 | 类型 | 受力方向）
 ${holds}
@@ -126,6 +128,10 @@ ${holds}
 
 export function buildFormatErrorFeedback(error: string): string {
   return `上一次的输出无法解析为要求的 JSON：${error}\n请严格按照输出格式，重新输出完整的 JSON（包含全部候选）。`
+}
+
+export function buildTruncatedFeedback(): string {
+  return '上一次的回复被长度上限截断了，没有输出 JSON。请少做推演：按你目前想到的最可行的方案，直接输出完整的 JSON（包含全部候选），不要再逐步验算每一个距离，程序会负责校验并把问题反馈给你。'
 }
 
 export function buildQualityFeedback(label: string, issues: string[]): string {

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { deriveBody } from '../src/body.js'
 import type { Beta, BetaStep } from '../src/schema.js'
 import type { Route } from '../src/types.js'
+import { simulate } from '../src/simulate.js'
 import { edgeDistance, limitsFor, verify } from '../src/verify.js'
+import { renderViolation } from '../src/violations.js'
 
 // 一条最小的直墙线路：起点 #1，左侧 #2，右上 #3（远），TOP #4
 const route: Route = {
@@ -153,6 +155,80 @@ describe('verify', () => {
     expect(verify(hookRoute, b).violations.filter((v) => v.rule === 'R6')).toEqual([])
     const plain = beta([step({ limb: 'RF', to: 50, foot: 'front' }), step({ limb: 'RF', to: 11, foot: 'front' }), ...toTop])
     expect(verify(hookRoute, plain).violations.map((v) => v.rule)).toContain('R6')
+  })
+
+  describe('R11：身体不能压得太紧', () => {
+    // 起点手 #1 在 y=160；#60 只低 20cm，#61 低 40cm；170cm 的人最少要低 34cm
+    const tight: Route = {
+      ...route,
+      holds: [...route.holds, { id: 60, x: 190, y: 140, r: 5, role: 'normal' }, { id: 61, x: 190, y: 120, r: 5, role: 'normal' }],
+    }
+    const tightRules = (steps: BetaStep[]) => verify(tight, beta([...steps, ...toTop])).violations.map((v) => v.rule)
+
+    it('普通踩点离双手太近时违规，并给出实际距离和下限', () => {
+      const v = verify(tight, beta([step({ limb: 'LF', to: 60, foot: 'front' }), ...toTop])).violations
+      expect(v).toContainEqual(expect.objectContaining({ rule: 'R11', step: 1, limbs: ['LF'], holds: [60], actualCm: 20, limitCm: 34 }))
+    })
+
+    it('离双手足够远时不违规', () => {
+      expect(tightRules([step({ limb: 'LF', to: 61, foot: 'front' })])).not.toContain('R11')
+    })
+
+    it('挂脚跟、勾脚尖不受限制', () => {
+      expect(tightRules([step({ limb: 'LF', to: 60, foot: 'heel-hook' })])).not.toContain('R11')
+    })
+
+    it('rock-over 那一步允许，之后这只脚不动时继续允许', () => {
+      const steps = [step({ limb: 'LF', to: 60, foot: 'front', techniques: ['rock-over'] }), step({ limb: 'RF', to: null, foot: 'smear' })]
+      expect(tightRules(steps)).not.toContain('R11')
+    })
+
+    it('先上高脚、下一步 rock-over 翻上去，上脚那一步也允许', () => {
+      const steps = [step({ limb: 'LF', to: 60, foot: 'front' }), step({ limb: 'LH', to: 4, techniques: ['rock-over'] }), step({ limb: 'RH', to: 4 })]
+      expect(verify(tight, beta(steps)).violations.map((v) => v.rule)).not.toContain('R11')
+    })
+
+    it('只标 high-step 不算豁免', () => {
+      expect(tightRules([step({ limb: 'LF', to: 60, foot: 'front', techniques: ['high-step'] })])).toContain('R11')
+    })
+
+    it('脚已经高过手时只报 R6，不重复报 R11', () => {
+      const high = verify(route, beta([step({ limb: 'LF', to: 12, foot: 'front' }), ...toTop])).violations.map((v) => v.rule)
+      expect(high).toContain('R6')
+      expect(high).not.toContain('R11')
+    })
+  })
+
+  describe('踩墙的脚按它离开的点算位置', () => {
+    // #70 离右脚起点 #11 有 171cm，超过双脚跨度上限 153cm；离起点手 #1 170cm，没超手脚跨度
+    const wide: Route = { ...route, holds: [...route.holds, { id: 70, x: 50, y: 60, r: 5, role: 'normal' }] }
+
+    it('simulate 记下踩墙的脚离开的点，换回踩点或旗式时清掉', () => {
+      const frames = simulate(
+        beta([
+          step({ limb: 'RF', to: null, foot: 'smear' }),
+          step({ limb: 'LH', to: 2 }),
+          step({ limb: 'RF', to: 11, foot: 'front' }),
+          step({ limb: 'RF', to: null, foot: 'flag' }),
+        ]),
+      )
+      expect(frames.map((f) => f.smearAt.RF)).toEqual([null, 11, 11, null, null])
+    })
+
+    it('R4：一只脚踩墙，另一只脚也不能跨出双脚跨度', () => {
+      const v = verify(wide, beta([step({ limb: 'RF', to: null, foot: 'smear' }), step({ limb: 'LF', to: 70, foot: 'front' }), ...toTop])).violations
+      expect(v).toContainEqual(expect.objectContaining({ rule: 'R4', step: 2, limbs: ['LF', 'RF'], holds: [70, 11], detail: 'smear' }))
+    })
+
+    it('R3：踩墙的脚和手的距离也要检查', () => {
+      const v = verify(route, beta([step({ limb: 'RF', to: null, foot: 'smear' }), step({ limb: 'LH', to: 12 }), ...toTop])).violations
+      expect(v).toContainEqual(expect.objectContaining({ rule: 'R3', step: 2, limbs: ['LH', 'RF'], holds: [12, 11], detail: 'smear' }))
+    })
+
+    it('反馈里说明这只脚在踩墙、按哪个点算', () => {
+      const text = renderViolation({ step: 2, rule: 'R4', limbs: ['LF', 'RF'], holds: [70, 11], actualCm: 171, limitCm: 153, detail: 'smear' })
+      expect(text).toContain('踩墙的脚按它离开的点算位置')
+    })
   })
 
   it('R7：交叉手需要标 cross', () => {

@@ -10,6 +10,10 @@ export const FOOT_SPAN_RATIO = 0.9
 export const FOOT_ABOVE_HANDS_TOLERANCE_CM = 20
 /** 挂脚跟、勾脚尖可以高过手，但不能比较高那只手再高出这么多，否则身体就倒过来了 */
 export const HOOK_ABOVE_TOP_HAND_MAX_CM = 40
+/** 普通踩点至少要比双手平均高度低身高的这个比例，否则身体压不了这么紧（170cm 约 34cm） */
+export const FOOT_BELOW_HANDS_MIN_RATIO = 0.2
+/** 翻上、撑上时脚可以贴近甚至略高于手 */
+export const COMPRESSION_EXEMPT_TECHNIQUES = ['rock-over', 'mantle']
 /** 墙角度小于这个值算正墙 */
 export const SLAB_MAX_ANGLE_DEG = 0
 export const CROSS_TOLERANCE_CM = 15
@@ -18,7 +22,7 @@ export const TWIST_REACH_BONUS = 1.1
 export const DYNAMIC_REACH_BONUS = 1.1
 export const PULL_DIR_TOLERANCE_DEG = 60
 
-export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10'
+export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10' | 'R11'
 export type WarningId = 'S1' | 'S3' | 'S4' | 'S5'
 
 /** 侧身类技巧：正墙上很少需要 */
@@ -52,6 +56,8 @@ export interface Limits {
   handSpanCm: number
   handFootCm: number
   footSpanCm: number
+  /** 普通踩点比双手平均高度至少低多少 */
+  footBelowHandsMinCm: number
 }
 
 export function limitsFor(body: Body): Limits {
@@ -60,6 +66,7 @@ export function limitsFor(body: Body): Limits {
     handSpanCm: body.armSpanCm * HAND_SPAN_FACTOR,
     handFootCm: (dims.shoulderHeightCm + dims.armLengthCm) * HAND_FOOT_FACTOR,
     footSpanCm: body.heightCm * FOOT_SPAN_RATIO,
+    footBelowHandsMinCm: body.heightCm * FOOT_BELOW_HANDS_MIN_RATIO,
   }
 }
 
@@ -128,8 +135,8 @@ interface FrameCheck {
   stretched: Stretched
 }
 
-/** 单帧的几何检查（R2、R3、R4、R6、R7） */
-function checkFrame(frame: Frame, byId: Map<number, Hold>, limits: Limits, carried: Stretched): FrameCheck {
+/** 单帧的几何检查（R2、R3、R4、R6、R7、R11） */
+function checkFrame(frame: Frame, byId: Map<number, Hold>, limits: Limits, carried: Stretched, nextTechniques: string[]): FrameCheck {
   const { pose } = frame
   const out: Violation[] = []
   const stretched: Stretched = new Map()
@@ -139,13 +146,18 @@ function checkFrame(frame: Frame, byId: Map<number, Hold>, limits: Limits, carri
   const lf = hold(pose.LF)
   const rf = hold(pose.RF)
   const techniques = frame.step?.techniques ?? []
+  // 跨度检查用的脚位置：踩墙的脚按它离开的点算，避免靠踩墙把脚"传送"走
+  const lfAt = lf ?? hold(frame.smearAt.LF)
+  const rfAt = rf ?? hold(frame.smearAt.RF)
+  const smearDetail = (limbs: Limb[]) =>
+    limbs.some((l) => (l === 'LF' && !lf && lfAt) || (l === 'RF' && !rf && rfAt)) ? { detail: 'smear' } : {}
 
   const checkReach = (rule: 'R2' | 'R3', limbs: Limb[], a: Hold, b: Hold, base: number, frameBonus: number) => {
     const key = `${rule}|${limbs.join(',')}|${a.id},${b.id}`
     const bonus = Math.max(frameBonus, carried.get(key) ?? 1)
     const d = edgeDistance(a, b)
     const limit = base * bonus
-    if (d > limit) out.push({ step: frame.index, rule, limbs, holds: [a.id, b.id], actualCm: d, limitCm: limit })
+    if (d > limit) out.push({ step: frame.index, rule, limbs, holds: [a.id, b.id], actualCm: d, limitCm: limit, ...smearDetail(limbs) })
     else if (d > base) stretched.set(key, bonus)
   }
 
@@ -164,17 +176,19 @@ function checkFrame(frame: Frame, byId: Map<number, Hold>, limits: Limits, carri
 
   const hands: Array<['LH' | 'RH', Hold | null]> = [['LH', lh], ['RH', rh]]
   const feet: Array<['LF' | 'RF', Hold | null]> = [['LF', lf], ['RF', rf]]
+  const feetAt: Array<['LF' | 'RF', Hold | null]> = [['LF', lfAt], ['RF', rfAt]]
   for (const [handLimb, h] of hands) {
-    for (const [footLimb, f] of feet) {
+    for (const [footLimb, f] of feetAt) {
       if (h && f) checkReach('R3', [handLimb, footLimb], h, f, limits.handFootCm, reachBonus(frame, handLimb))
     }
   }
 
-  if (lf && rf) {
-    const d = edgeDistance(lf, rf)
-    if (d > limits.footSpanCm) out.push({ step: frame.index, rule: 'R4', limbs: ['LF', 'RF'], holds: [lf.id, rf.id], actualCm: d, limitCm: limits.footSpanCm })
-    checkCross(['LF', 'RF'], lf, rf)
+  if (lfAt && rfAt) {
+    const d = edgeDistance(lfAt, rfAt)
+    if (d > limits.footSpanCm)
+      out.push({ step: frame.index, rule: 'R4', limbs: ['LF', 'RF'], holds: [lfAt.id, rfAt.id], actualCm: d, limitCm: limits.footSpanCm, ...smearDetail(['LF', 'RF']) })
   }
+  if (lf && rf) checkCross(['LF', 'RF'], lf, rf)
 
   if (lh && rh) {
     const handsY = (lh.y + rh.y) / 2
@@ -183,8 +197,17 @@ function checkFrame(frame: Frame, byId: Map<number, Hold>, limits: Limits, carri
       if (!f) continue
       const tech = frame.footTech[footLimb]
       const hooked = tech === 'heel-hook' || tech === 'toe-hook'
-      if (!hooked && f.y - handsY > FOOT_ABOVE_HANDS_TOLERANCE_CM)
+      const tooHigh = !hooked && f.y - handsY > FOOT_ABOVE_HANDS_TOLERANCE_CM
+      if (tooHigh)
         out.push({ step: frame.index, rule: 'R6', limbs: [footLimb], holds: [f.id], actualCm: f.y - handsY, limitCm: FOOT_ABOVE_HANDS_TOLERANCE_CM })
+      // 已经高过手的脚只报 R6。翻上、撑上那一步，以及紧接着要翻上的上脚那一步，允许压紧；这只脚不动时之后继续允许
+      const gap = handsY - f.y
+      const key = `R11|${footLimb}|${f.id}`
+      if (!hooked && !tooHigh && gap < limits.footBelowHandsMinCm) {
+        const exempt = [...techniques, ...nextTechniques].some((t) => COMPRESSION_EXEMPT_TECHNIQUES.includes(t))
+        if (exempt || carried.has(key)) stretched.set(key, 1)
+        else out.push({ step: frame.index, rule: 'R11', limbs: [footLimb], holds: [f.id], actualCm: gap, limitCm: limits.footBelowHandsMinCm })
+      }
       if (hooked && f.y - topHandY > HOOK_ABOVE_TOP_HAND_MAX_CM)
         out.push({
           step: frame.index,
@@ -301,7 +324,7 @@ export function verify(route: Route, beta: Beta): VerifyResult {
   let prevKeys = new Set<string>()
   let stretched: Stretched = new Map()
   frames.forEach((frame, i) => {
-    const check = checkFrame(frame, byId, limits, stretched)
+    const check = checkFrame(frame, byId, limits, stretched, frames[i + 1]?.step?.techniques ?? [])
     violations.push(...check.violations.filter((v) => !prevKeys.has(violationKey(v))))
     prevKeys = new Set(check.violations.map(violationKey))
     stretched = check.stretched
