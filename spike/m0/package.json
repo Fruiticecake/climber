@@ -5,6 +5,7 @@
   "description": "M0: 验证大模型能否根据点位数据给出技巧型抱石爬法",
   "scripts": {
     "m0": "tsx src/run.ts",
+    "preview": "tsx src/preview-cli.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

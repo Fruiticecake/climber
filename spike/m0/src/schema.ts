@@ -66,4 +66,14 @@ export const RouteSchema = z.object({
       pullDirDeg: z.number().optional(),
     }),
   ),
+  photo: z
+    .object({
+      file: z.string(),
+      widthPx: z.number().positive(),
+      heightPx: z.number().positive(),
+      pxPerCm: z.number().positive(),
+      originX: z.number(),
+      originY: z.number(),
+    })
+    .optional(),
 })

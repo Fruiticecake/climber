@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { loadModels, loadRoutes, loadTechniques } from '../src/config.js'
 import { createProvider, estimateUsd } from '../src/providers/index.js'
 import { buildReport } from '../src/report.js'
+import { buildRunLog, parseRunLog } from '../src/runlog.js'
 import { solveRoute } from '../src/solve.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -36,6 +37,23 @@ describe('buildReport', () => {
     expect(report).toContain('第 1 次：violations，各候选违规数 1；第 2 次：passed，各候选违规数 0')
     expect(report).toContain('| 5 | 右手 | #8 | pull |')
     expect(report).toContain('定点，需要发力并精准抓点')
+  })
+
+  it('运行结果 JSON 能原样读回，包含展示的爬法', async () => {
+    const provider = createProvider(modelById('mock'), path.join(root, 'fixtures/mock'))
+    const route = routes.find((r) => r.id === 'b-overhang-heelhook')!
+    const result = await solveRoute(route, provider, techniques)
+    const log = buildRunLog([{ route, entries: [{ modelId: 'mock', result, usd: 0 }] }], new Date('2026-10-27T10:00:00Z'))
+    const back = parseRunLog(JSON.stringify(log))
+    expect(back).toEqual(log)
+    const entry = back.runs[0]!.entries[0]!
+    expect(back.runs[0]!.routeId).toBe('b-overhang-heelhook')
+    expect(entry.attempts.map((a) => a.outcome)).toEqual(['violations', 'passed'])
+    expect(entry.best!.beta).toEqual(result.best!.beta)
+  })
+
+  it('读回时校验格式', () => {
+    expect(() => parseRunLog('{"startedAt": 1}')).toThrow()
   })
 
   it('非正常结束的尝试写出停止原因', () => {

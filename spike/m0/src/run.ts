@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util'
 import { loadModels, loadRoutes, loadTechniques } from './config.js'
 import { createProvider, estimateUsd } from './providers/index.js'
 import { buildReport, type RunEntry } from './report.js'
+import { buildRunLog } from './runlog.js'
 import { solveRoute } from './solve.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -53,3 +54,6 @@ fs.mkdirSync(reportDir, { recursive: true })
 const reportFile = path.join(reportDir, `m0-${stamp}.md`)
 fs.writeFileSync(reportFile, buildReport(runs, startedAt))
 log(`报告：${reportFile}`)
+const logFile = path.join(reportDir, `m0-${stamp}.json`)
+fs.writeFileSync(logFile, `${JSON.stringify(buildRunLog(runs, startedAt), null, 2)}\n`)
+log(`数据：${logFile}`)

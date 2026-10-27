@@ -28,6 +28,20 @@ export interface Wall {
   angleDeg: number
 }
 
+/**
+ * 线路坐标和照片像素的对应关系（只用于预览，不交给模型）：
+ * 像素 x = originX + x × pxPerCm，像素 y = originY − y × pxPerCm
+ */
+export interface RoutePhoto {
+  /** 相对 spike/m0 的路径；照片不一定在仓库里 */
+  file: string
+  widthPx: number
+  heightPx: number
+  pxPerCm: number
+  originX: number
+  originY: number
+}
+
 export interface Route {
   id: string
   name: string
@@ -36,6 +50,7 @@ export interface Route {
   wall: Wall
   body: Body
   holds: Hold[]
+  photo?: RoutePhoto
 }
 
 /** 每个肢体所在的点位 id；脚为 null 表示踩墙或悬空 */

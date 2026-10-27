@@ -4,6 +4,7 @@
   "description": "用户在岩馆拍的真实线路（照片没有放进仓库）：起点在右下方的黄色把手，先往左上横移，再沿左上方的几个大黄点往右上到 TOP。坐标是从照片按约 1.6 像素/cm 估算的，没有做透视校正；墙由几个折面组成，这里统一按 10° 微仰处理。",
   "wall": { "widthCm": 510, "heightCm": 430, "angleDeg": 10 },
   "body": { "heightCm": 170, "armSpanCm": 172 },
+  "photo": { "file": "photos/gym-blue-tag-yellow.jpg", "widthPx": 810, "heightPx": 1440, "pxPerCm": 1.6, "originX": 0, "originY": 1150 },
   "holds": [
     { "id": 1, "x": 270, "y": 403, "r": 10, "role": "top" },
     { "id": 2, "x": 153, "y": 319, "r": 18, "role": "normal" },
