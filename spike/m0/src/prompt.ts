@@ -65,7 +65,7 @@ export function buildSystemPrompt(techniques: Technique[]): string {
 3. 距离按岩点边缘计算。双手跨度、手脚跨度、双脚跨度都有上限，具体数值见每条线路的"身体限制"。
 4. 髋贴墙（hips 为 left-in 或 right-in）时，贴墙一侧的手负责锁定，对侧的手伸展上限放宽到 ${TWIST_REACH_BONUS} 倍；motion 为 deadpoint 或 dyno 时也放宽到 ${TWIST_REACH_BONUS} 倍。
 5. 脚不能比双手平均高度高出 ${FOOT_ABOVE_HANDS_TOLERANCE_CM}cm 以上，除非这只脚是 heel-hook 或 toe-hook；但挂脚跟、勾脚尖也不能比较高那只手再高出 ${HOOK_ABOVE_TOP_HAND_MAX_CM}cm 以上（否则身体会倒过来）。
-6. 左手不能在右手右边超过 ${CROSS_TOLERANCE_CM}cm（脚同理），有意交叉时在 techniques 里写 "cross"。
+6. 左手不能在右手右边超过 ${CROSS_TOLERANCE_CM}cm（脚同理），有意交叉时在 techniques 里写 "cross"。交叉也有幅度上限（见"身体限制"），超过上限写了 cross 也不行。只在这一步确实交叉时写 cross。
 7. 不要回到出现过的姿态，总步数不超过 ${MAX_STEPS}。
 8. 手和脚不能同时在同一个点上：手离开之后脚才能踩上去（techniques 含 rock-over 或 mantle 时除外）。
 9. 身体不能压得太紧：普通踩点的脚必须比双手平均高度低一定距离（具体数值见"身体限制"），否则身体会被折成一团，真人做不到。挂脚跟、勾脚尖不受限制；techniques 含 rock-over 或 mantle 的那一步、以及它前面紧挨着的上脚那一步允许，之后这只脚不动时继续允许。只标 high-step 不算。
@@ -124,6 +124,7 @@ ${wallStyleHint(route.wall.angleDeg)}
 - 任意手到任意脚 ≤ ${Math.round(limits.handFootCm)}cm
 - 双脚跨度 ≤ ${Math.round(limits.footSpanCm)}cm
 - 普通踩点比双手平均高度至少低 ${Math.round(limits.footBelowHandsMinCm)}cm${hookLimit}
+- 有意交叉时：双手最多交叉 ${Math.round(limits.handCrossMaxCm)}cm，双脚最多交叉 ${Math.round(limits.footCrossMaxCm)}cm
 
 ## 岩点（编号 | 中心 | 半径 | 角色 | 类型 | 受力方向）
 ${holds}

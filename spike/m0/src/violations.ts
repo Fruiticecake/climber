@@ -34,7 +34,9 @@ function describeRule(v: Violation): string {
     case 'R12':
       return `${a ? LIMB_NAMES[a] : ''}（#${ha}）${v.detail ?? ''}`
     case 'R7':
-      return `${pair}左右交叉了，如果是有意的交叉，请在 techniques 里加上 "cross"`
+      return v.detail === 'too-far'
+        ? `${pair}左右交叉了 ${cm(v.actualCm)}，超过交叉上限 ${cm(v.limitCm)}，标了 cross 也做不到`
+        : `${pair}左右交叉了，如果是有意的交叉，请在 techniques 里加上 "cross"`
     default:
       return v.detail ?? v.rule
   }

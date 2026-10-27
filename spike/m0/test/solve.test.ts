@@ -49,6 +49,7 @@ describe('样例数据', () => {
     expect(buildRoutePrompt(routeById('a-sidepull-twist'), 2)).toContain('双手跨度 ≤ 163cm')
     expect(buildRoutePrompt(routeById('a-sidepull-twist'), 2)).toContain('普通踩点比双手平均高度至少低 34cm')
     expect(buildRoutePrompt(routeById('a-sidepull-twist'), 2)).toContain('离双手中点水平至少 43cm，并且比双手平均高度至少低 17cm')
+    expect(buildRoutePrompt(routeById('a-sidepull-twist'), 2)).toContain('双手最多交叉 51cm，双脚最多交叉 34cm')
     // 30° 的仰角墙不受挂脚位置限制，不写这一行
     expect(buildRoutePrompt(routeById('b-overhang-heelhook'), 2)).not.toContain('离双手中点水平至少')
   })

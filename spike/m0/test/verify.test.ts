@@ -303,6 +303,55 @@ describe('verify', () => {
     expect(rules(b)).not.toContain('R7')
   })
 
+  describe('R7：标了 cross 也有交叉幅度上限', () => {
+    // 170cm 的人：双手最多交叉 51cm，双脚最多交叉 34cm。左手 #1 在 x=200，左右脚 #10、#11 在 x=180、230
+    const crossing: Route = {
+      ...route,
+      holds: [
+        ...route.holds,
+        { id: 95, x: 130, y: 170, r: 5, role: 'normal' },
+        { id: 96, x: 270, y: 45, r: 5, role: 'normal' },
+        { id: 97, x: 255, y: 45, r: 5, role: 'normal' },
+      ],
+    }
+    const crossRules = (steps: BetaStep[]) => verify(crossing, beta([...steps, ...toTop])).violations
+
+    it('双手交叉 50cm 在上限内，标了 cross 就允许（同上面的测试）', () => {
+      expect(rules(beta([step({ limb: 'RH', to: 2, techniques: ['cross'] }), step({ limb: 'RH', to: 4 }), step({ limb: 'LH', to: 4 })]))).not.toContain('R7')
+    })
+
+    it('双手交叉 70cm 超过上限，标了 cross 也违规，并说明幅度', () => {
+      // 第 2 步左手换到 #4 时右手还在 #95，仍然交叉 70cm，也会再报一次；这里只看第 1 步
+      const v = crossRules([step({ limb: 'RH', to: 95, techniques: ['cross'] })]).filter((x) => x.rule === 'R7' && x.step === 1)
+      expect(v).toEqual([expect.objectContaining({ limbs: ['LH', 'RH'], holds: [1, 95], actualCm: 70, detail: 'too-far' })])
+      expect(v[0]!.limitCm).toBeCloseTo(51)
+      expect(renderViolation(v[0]!)).toBe('第 1 步（R7）：左手（#1）和右手（#95）左右交叉了 70cm，超过交叉上限 51cm，标了 cross 也做不到。')
+    })
+
+    it('双脚交叉 40cm 超过上限 34cm', () => {
+      const v = crossRules([step({ limb: 'LF', to: 96, foot: 'front', techniques: ['cross'] })]).filter((x) => x.rule === 'R7')
+      expect(v).toEqual([expect.objectContaining({ step: 1, limbs: ['LF', 'RF'], holds: [96, 11], actualCm: 40, detail: 'too-far' })])
+    })
+
+    it('双脚交叉 25cm：标了 cross 允许，没标违规', () => {
+      expect(crossRules([step({ limb: 'LF', to: 97, foot: 'front', techniques: ['cross'] })]).map((x) => x.rule)).not.toContain('R7')
+      expect(crossRules([step({ limb: 'LF', to: 97, foot: 'front' })]).map((x) => x.rule)).toContain('R7')
+    })
+  })
+
+  it('S6：标了 cross 但手脚都没有交叉，整套爬法给一条提示', () => {
+    const notCrossed: Route = { ...route, holds: [...route.holds, { id: 98, x: 240, y: 190, r: 5, role: 'normal' }] }
+    const b = beta([step({ limb: 'RH', to: 98, techniques: ['cross'] }), step({ limb: 'LH', to: 4 }), step({ limb: 'RH', to: 4, techniques: ['cross'] })])
+    const result = verify(notCrossed, b)
+    expect(result.violations).toEqual([])
+    expect(result.warnings.filter((w) => w.rule === 'S6')).toEqual([
+      { step: 1, steps: [1, 3], rule: 'S6', detail: '第 1、3 步标了 cross，但这一步手和脚都没有交叉；cross 只在确实交叉时写' },
+    ])
+    // 真的交叉时不提示
+    const real = verify(route, beta([step({ limb: 'RH', to: 2, techniques: ['cross'] }), step({ limb: 'RH', to: 4 }), step({ limb: 'LH', to: 4 })]))
+    expect(real.warnings.map((w) => w.rule)).not.toContain('S6')
+  })
+
   it('R8：原地不动或回到旧姿态', () => {
     expect(rules(beta([step({ limb: 'LF', to: 10 }), ...toTop]))).toContain('R8')
     const back = beta([step({ limb: 'LH', to: 2 }), step({ limb: 'LH', to: 1 }), ...toTop])

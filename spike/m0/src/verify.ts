@@ -22,13 +22,16 @@ export const HOOK_BELOW_HANDS_MIN_RATIO = 0.1
 /** 墙角度小于这个值算正墙 */
 export const SLAB_MAX_ANGLE_DEG = 0
 export const CROSS_TOLERANCE_CM = 15
+/** 标了 cross 也只能交叉这么远（按身高）：手大约肩宽加一截小臂，脚只能越过另一只脚一点 */
+export const HAND_CROSS_MAX_RATIO = 0.3
+export const FOOT_CROSS_MAX_RATIO = 0.2
 export const MAX_STEPS = 40
 export const TWIST_REACH_BONUS = 1.1
 export const DYNAMIC_REACH_BONUS = 1.1
 export const PULL_DIR_TOLERANCE_DEG = 60
 
 export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10' | 'R11' | 'R12' | 'R13'
-export type WarningId = 'S1' | 'S3' | 'S4' | 'S5'
+export type WarningId = 'S1' | 'S3' | 'S4' | 'S5' | 'S6'
 
 /** 侧身类技巧：正墙上很少需要 */
 export const TWIST_TECHNIQUES = ['twist-lock', 'drop-knee', 'backstep']
@@ -66,6 +69,9 @@ export interface Limits {
   /** 不陡的墙上挂脚：离双手中点至少多远、比双手平均高度至少低多少 */
   hookSideMinCm: number
   hookBelowHandsMinCm: number
+  /** 有意交叉时最多交叉多远 */
+  handCrossMaxCm: number
+  footCrossMaxCm: number
 }
 
 export function limitsFor(body: Body): Limits {
@@ -77,6 +83,8 @@ export function limitsFor(body: Body): Limits {
     footBelowHandsMinCm: body.heightCm * FOOT_BELOW_HANDS_MIN_RATIO,
     hookSideMinCm: body.heightCm * HOOK_SIDE_MIN_RATIO,
     hookBelowHandsMinCm: body.heightCm * HOOK_BELOW_HANDS_MIN_RATIO,
+    handCrossMaxCm: body.heightCm * HAND_CROSS_MAX_RATIO,
+    footCrossMaxCm: body.heightCm * FOOT_CROSS_MAX_RATIO,
   }
 }
 
@@ -179,17 +187,23 @@ function checkFrame(frame: Frame, ctx: RouteContext, carried: Stretched, nextTec
     else if (d > base) stretched.set(key, bonus)
   }
 
-  // 交叉：标了 cross 的那一步允许交叉，之后两个点都不变时继续允许
-  const checkCross = (limbs: Limb[], left: Hold, right: Hold) => {
-    if (left.x - right.x <= CROSS_TOLERANCE_CM) return
+  // 交叉：标了 cross 的那一步允许交叉，之后两个点都不变时继续允许；但超过幅度上限时标了也不行
+  const checkCross = (limbs: Limb[], left: Hold, right: Hold, maxCm: number) => {
+    const amount = left.x - right.x
+    if (amount <= CROSS_TOLERANCE_CM) return
+    const holds = [left.id, right.id]
+    if (amount > maxCm) {
+      out.push({ step: frame.index, rule: 'R7', limbs, holds, actualCm: amount, limitCm: maxCm, detail: 'too-far' })
+      return
+    }
     const key = `R7|${limbs.join(',')}|${left.id},${right.id}`
     if (techniques.includes('cross') || carried.has(key)) stretched.set(key, 1)
-    else out.push({ step: frame.index, rule: 'R7', limbs, holds: [left.id, right.id] })
+    else out.push({ step: frame.index, rule: 'R7', limbs, holds })
   }
 
   if (lh && rh) {
     checkReach('R2', ['LH', 'RH'], lh, rh, limits.handSpanCm, Math.max(reachBonus(frame, 'LH'), reachBonus(frame, 'RH')))
-    checkCross(['LH', 'RH'], lh, rh)
+    checkCross(['LH', 'RH'], lh, rh, limits.handCrossMaxCm)
   }
 
   const hands: Array<['LH' | 'RH', Hold | null]> = [['LH', lh], ['RH', rh]]
@@ -206,7 +220,7 @@ function checkFrame(frame: Frame, ctx: RouteContext, carried: Stretched, nextTec
     if (d > limits.footSpanCm)
       out.push({ step: frame.index, rule: 'R4', limbs: ['LF', 'RF'], holds: [lfAt.id, rfAt.id], actualCm: d, limitCm: limits.footSpanCm, ...smearDetail(['LF', 'RF']) })
   }
-  if (lf && rf) checkCross(['LF', 'RF'], lf, rf)
+  if (lf && rf) checkCross(['LF', 'RF'], lf, rf, limits.footCrossMaxCm)
 
   if (lh && rh) {
     const handsY = (lh.y + rh.y) / 2
@@ -343,8 +357,28 @@ function slabTwistWarning(route: Route, frames: Frame[]): Warning[] {
   ]
 }
 
+/** 这一帧里左右手或左右脚是否交叉（超过容差） */
+function isCrossed(frame: Frame, byId: Map<number, Hold>): boolean {
+  const x = (id: number | null) => (id === null ? undefined : byId.get(id)?.x)
+  const pairs: Array<[number | undefined, number | undefined]> = [
+    [x(frame.pose.LH), x(frame.pose.RH)],
+    [x(frame.pose.LF), x(frame.pose.RF)],
+  ]
+  return pairs.some(([l, r]) => l !== undefined && r !== undefined && l - r > CROSS_TOLERANCE_CM)
+}
+
+/** S6：标了 cross 但这一步手脚都没有交叉。整套爬法只给一条提示，列出涉及的步骤 */
+function crossTagWarning(frames: Frame[], byId: Map<number, Hold>): Warning[] {
+  const tagged = frames
+    .slice(1)
+    .filter((f) => f.step!.techniques.includes('cross') && !isCrossed(f, byId))
+    .map((f) => f.index)
+  if (tagged.length === 0) return []
+  return [{ step: tagged[0]!, steps: tagged, rule: 'S6', detail: `第 ${tagged.join('、')} 步标了 cross，但这一步手和脚都没有交叉；cross 只在确实交叉时写` }]
+}
+
 function collectWarnings(route: Route, frames: Frame[], byId: Map<number, Hold>): Warning[] {
-  const out: Warning[] = [...slabTwistWarning(route, frames)]
+  const out: Warning[] = [...slabTwistWarning(route, frames), ...crossTagWarning(frames, byId)]
   frames.slice(1).forEach((frame, k) => {
     const prev = frames[k]!
     const step = frame.step!
