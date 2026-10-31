@@ -3,3 +3,5 @@ node_modules/
 reports/
 coverage/
 data/
+# 从 Kilter 数据库导出的线路：数据授权不明确，不放进仓库，用 npm run kilter 在本地生成
+routes/k-*.json

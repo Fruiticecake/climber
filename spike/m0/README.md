@@ -22,11 +22,23 @@ npm run preview -- --log reports/m0-xxx.json --route d-gym-blue-tag-yellow --mod
 
 每次运行在 `reports/` 下写一份 Markdown 报告和一份同名 JSON。`npm run preview` 读 JSON，生成 `reports/preview-<线路>-<模型>.html`，是单个文件，直接用浏览器打开。线路有 `photo` 并且照片文件存在时用照片做背景，否则按坐标画墙面。
 
+## Kilter 线路（G0a）
+
+Kilter 数据不在仓库里，需要先把 [kilter_splits.sqlite](https://huggingface.co/datasets/Vilin97/KilterBoard)（约 124MB）下载到 `data/`。数据来自 Kilter 官方 App，授权不明确，只建议用于个人学习和评测。
+
+```bash
+npm run kilter -- --list --angle 40                                      # 列出 40° 最多人爬的线
+npm run kilter -- --uuid BF0DB71D0D674289BEEF46E226216BF6 --angle 40      # 导出成 routes/k-bf0db71d-40.json
+npm run m0 -- --models deepseek --routes k-bf0db71d-40
+```
+
 ## 目录
 
 | 路径 | 说明 |
 |---|---|
-| `routes/*.json` | 线路数据。现在的三条是 Claude 构造的样例，请换成你爬过的真实线路 |
+| `routes/*.json` | 线路数据。A、B、C 是 Claude 构造的样例，D 是岩馆实拍（照片不在仓库里）；`k-*.json` 是从 Kilter 导出的线路，不放进仓库 |
+| `src/kilter.ts`、`src/kilter-cli.ts` | Kilter 线路转换 |
+| `src/preview.ts`、`src/preview-html.ts` | 2D 动画预览 |
 | `config/techniques.yaml` | 技巧词典初稿，待你审核 |
 | `config/models.yaml` | 可选模型和单价；DeepSeek 的模型名、地址和价格请按官网填写 |
 | `fixtures/mock/*.json` | mock 的剧本回复，由 Claude Code 手写 |

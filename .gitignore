@@ -1,0 +1,4 @@
+# 本地工具配置（浏览器预览用的 launch.json 等）
+.claude/
+# 岩馆实拍照片：有岩馆招牌，不放进仓库
+spike/m0/photos/
